@@ -1,12 +1,20 @@
-# fourbars
+# Fourbars — Make tasty loops.
 
-**Make four bars. Share an idea.** A single-track music sketchpad and community feed.
+Cook up a four-bar, single-track melody, listen in your browser, and share it when it's ready. Let other listeners decide what's tasty.
 
-## Deployment status
+[**Open the live app**](https://fourbars.rsrishitsingh.workers.dev) · [**GitHub repository**](https://github.com/rishit-singh/fourbars) · [Roadmap](ROADMAP.md) · [Deployment CI](docs/deployment-ci.md)
 
-Public shell: **https://fourbars.rsrishitsingh.workers.dev**
+## Make a loop
 
-The OpenNext/Workers build is deployed with Supabase URL/key configured, and the database schema has been applied using the Supabase CLI. The live anonymous feed was verified in an isolated browser and correctly shows an empty community. Anonymous API reads of `publications` succeed; reads of private `projects` are denied. Email auth is enabled with email confirmation required. Live signup, saving, and public playback still need an authenticated end-to-end check.
+1. **Create:** sign in and start a private project. Each loop is four bars of 4/4: 16 beats, one Piano, Bass, or Drums track.
+2. **Shape:** draw notes, drag to move, or resize their right edges. Select mode lets you box-select and move groups; Shift-click toggles individual notes, Delete/Backspace removes the selection, and Escape clears it. Choose your tempo and 1/4, 1/8, or 1/16-note snap.
+3. **Listen:** play, pause, resume, and seek in the browser. Turn on Loop in the editor to repeat your four bars.
+4. **Save privately, publish explicitly:** Save updates your draft. Publish shares a snapshot in the community feed and at a public link. Later edits—including the title—stay private until you Republish. Unpublish removes the public version and its likes while keeping your draft.
+5. **Take it with you:** download your melody as a MIDI file from the editor or your published page, ready to open in a music app.
+
+Anyone can browse and listen to published loops. Sign in to like favorites and set your profile's username and display name. Choose **Studio · Amber**, **Midnight · Blue**, or **Graphite · Violet** from Appearance.
+
+Pitched notes span C3–B4; drums use MIDI 36/38/42. Piano ↔ Bass preserves notes; switching between pitched and drum rows clears them after confirmation. Key is a label, not transposition. MIDI contains note data, not recorded audio.
 
 ## Run locally
 
@@ -40,21 +48,19 @@ npx supabase db query --linked --file supabase/schema.sql
 
 The project ref is the first part of your Supabase URL's hostname. CLI account authentication authorizes schema changes; the publishable key in `.env.local` does not. This applies the reapplicable bootstrap directly, not through migration history. Local CLI linkage under `supabase/.temp/` is ignored by Git.
 
-## Product flow
+## Routes
 
 - `/`: Community / My Projects, 12-item cursor pagination, player dialogs, likes, and All / Drafts / Published filters. Create opens a confirmation dialog before making a private project.
 - `/editor/new`: authenticated creation of a blank private project.
-- `/editor/[id]`: title, tempo, key metadata, Piano/Bass/Drums, snap 1/4–1/16; click to add, drag to move, right-edge resize, select + Delete/Backspace to remove. Default pitched range C3–B4; drums use MIDI 36/38/42.
+- `/editor/[id]`: private piano-roll editor, playback, save, publish, and MIDI export.
 - `/m/[id]`: published snapshot, playback, copy link; owner edit/MIDI/unpublish actions. Old `/melody/[id]` links redirect here.
 - `/login`: email/password signup and sign-in, confirmation resend cooldowns, and validated return destinations. Piano-roll help lives in the editor and supports Escape and focus trapping.
 
-Signed-in users can set a username and display name from Profile. Google sign-in requires enabling the provider with OAuth credentials in Supabase and setting `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` at build time; it is currently disabled. Email rate limits are enforced by Supabase; production delivery may require custom SMTP.
-
-**Save is private. Publish/Republish is explicit.** Even title changes stay private until republished. Public readers never read the draft table. Switching between pitched and drum rows clears notes after confirmation; piano ↔ bass preserves notes. Key is metadata, not transposition.
-
-Audio uses browser-only Tone.js synths: polyphonic triangle piano, sine bass, and separate membrane/noise/metal drum voices. There are no samples or audio uploads. One shared player owns playback; Stop and navigation dispose it and invalidate pending initialization. Editor Loop repeats four bars using bounded audio-clock scheduling; turning it off finishes the queued pass. MIDI is note data, not playable audio.
+Google sign-in requires enabling the provider with OAuth credentials in Supabase and setting `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` at build time; it is currently disabled. Email rate limits are enforced by Supabase; production delivery may require custom SMTP.
 
 ## Architecture and authorization
+
+Next.js App Router and React provide the UI, with Zustand for editor state, Tone.js for browser audio, Supabase for auth and PostgreSQL, and OpenNext for Cloudflare Workers deployment.
 
 **Supabase client + RLS is the API boundary; no tRPC or duplicate API server.** `lib/projects.ts` validates inputs with Zod and uses authenticated owner predicates. PostgreSQL also validates notes and titles so bypassing the browser does not bypass validation.
 
@@ -65,6 +71,8 @@ Audio uses browser-only Tone.js synths: polyphonic triangle piano, sine bass, an
 - `profiles`: public username/display name, owner-only writes; email is never exposed. `publication_likes`: one like per user/publication, owner-only writes and raw reads, public aggregate counts. Unpublishing removes associated likes.
 - `project_details` and `publication_details`: security-invoker read models add creator names, like counts, and publication status. Saved drafts are compared with snapshots to distinguish Published from Unpublished changes.
 - Public reads are client-side and refetched on navigation. Feed lists stay in component state; no authenticated Next.js data cache or N+1 user queries. Creator labels use profile display names or Anonymous.
+
+Audio uses lazily loaded Tone.js synths: polyphonic triangle piano, sine bass, and separate membrane/noise/metal drum voices. One shared player owns playback; owner-scoped cleanup and cancellation tokens prevent stale initialization from restarting it. Editor Loop uses bounded audio-clock scheduling; turning it off finishes the queued pass. There are no samples or audio uploads.
 
 ## Checks
 
@@ -85,9 +93,9 @@ The Playwright browser tests use installed **Google Chrome**, start their own Ne
 
 ## Deploy to Cloudflare Workers
 
-The verified initial deployment used **Next.js 15.5.28**, **`@opennextjs/cloudflare` 1.20.12**, and **Wrangler 4.151.1**. Exact dependencies are locked in `package-lock.json`.
+Production runs at **https://fourbars.rsrishitsingh.workers.dev**. A GitHub Actions workflow is configured for pushes to `main`, but automatic deployment is blocked until the required repository secrets and variables are added. Current releases were deployed locally. See [Deployment CI](docs/deployment-ci.md) for setup instructions. Exact dependencies are locked in `package-lock.json`.
 
-The adapter's installed README and [Cloudflare's OpenNext guide](https://developers.cloudflare.com/workers/framework-guides/web-apps/opennext/) document this build/deploy path. Cloudflare now recommends vinext for new projects; this existing Next 15/OpenNext starter uses its supported adapter rather than adding a migration to the timebox.
+For a local deployment, follow the installed adapter's README and [Cloudflare's OpenNext guide](https://developers.cloudflare.com/workers/framework-guides/web-apps/opennext/):
 
 ```sh
 npx wrangler login
@@ -97,23 +105,20 @@ npm run deploy
 
 `deploy` runs `opennextjs-cloudflare build && opennextjs-cloudflare deploy`. `preview` builds then runs the adapter's local Workers preview. `npm run build` alone only builds Next.js. Wrangler loads `.open-next/worker.js` and `.open-next/assets` with `nodejs_compat`.
 
-Set both `NEXT_PUBLIC_` values **at build time** (local `.env.local`, or Cloudflare Workers Builds variables). Changing runtime secrets cannot fix values already bundled into client JavaScript. No Vercel fallback was needed. Credentials and `.env.local` are not committed.
+Set both Supabase `NEXT_PUBLIC_` values **at build time** (local `.env.local`, or the GitHub Actions variables documented above). Changing runtime secrets cannot fix values already bundled into client JavaScript. Credentials and `.env.local` are not committed.
 
-## Remaining work / tradeoffs
+### Verification boundaries
 
-### Follow-up roadmap
+The existing deployment record confirms configured Supabase URL/key, applied database schema, and production auth redirects. Anonymous feed access and public snapshot reads were verified, and anonymous draft reads were denied. Email auth requires confirmation.
 
-- Measure Supabase request counts before adding client query caching and request deduplication. Scope private cache entries by user and invalidate on mutations/sign-out; separate personalized like state before considering shared CDN caching.
-- Preserve feed scroll position and playback when navigating between a melody overlay and its shareable page.
-- Add broader touch-device checks, keyboard-accessible group editing, and reduced-motion-aware transitions before introducing an animation library.
-- Review the integrated playback lifecycle, editing bounds, authentication gates, and deployment permissions before expanding features.
+Live signup/login/refresh, save/reopen, playback of a published loop, cross-account permissions, and republishing still need an end-to-end check against production. Local or mocked tests and a successful deployment do not establish that those live flows work.
 
-- **Release verification remaining:** verify signup/login/refresh, save/reopen, anonymous playback, A-vs-B permissions, and republishing against the deployed backend. Supabase URL/key, database schema, and production auth redirects are configured; the live anonymous feed and draft-read denial have been verified.
+## Limits and next steps
+
+See [ROADMAP.md](ROADMAP.md) for follow-up work.
+
 - No WAV/MP3/Storage integration, local recovery, undo/redo, optimistic concurrency, multitrack, samples, comments, or following.
 - Explicit save only. Link navigation and page unload warn about dirty state. Same-document Back/Forward cancellation uses the Navigation API; browsers without it may not warn on SPA history navigation.
 - Public melody metadata loads client-side; missing/private publications display the same unavailable state rather than a server-rendered HTTP 404. No SEO/share-card rendering yet.
 - Edits from multiple tabs are last-write-wins. Mutable feed ordering can move a republished item between cursor pages; loaded IDs are deduplicated.
 - Large polyphonic passages can clip or exceed the synth's 64-voice limit. Drum hits at the same pitch/onset are coalesced for playback.
-- Dependency audit still reports upstream development/build-tool advisories. The initial Vitest critical advisory was removed by upgrading; no forced framework downgrade was applied.
-
-Do not treat local/mocked tests as proof of a configured live product.

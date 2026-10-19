@@ -12,7 +12,7 @@ account.
 
 ## Required GitHub settings
 
-In `rishit-singh/fourbars`, open **Settings → Secrets and variables → Actions**.
+In `rishit-singh/fourbars`, open [Settings → Secrets and variables → Actions](https://github.com/rishit-singh/fourbars/settings/secrets/actions).
 Configure these repository-level settings before pushing to `main`:
 
 | Kind     | Name                                   | Value                                                             |
@@ -40,8 +40,8 @@ queries returned no repository settings. The four settings above therefore
 remain external setup requirements; no account settings or credentials were
 created or changed. Ensure GitHub Actions is enabled for this repository.
 
-After configuring the settings, push to `main` and inspect **Actions → Deploy
-production**. Missing settings stop the job with their names. A successful job
+After configuring the settings, push to `main` and inspect [Actions → Deploy
+production](https://github.com/rishit-singh/fourbars/actions/workflows/deploy.yml). Missing settings stop the job with their names. A successful job
 confirms the checks, build and upload; verify the deployed app's authentication,
 save/load and publishing separately against production Supabase. The tests use
 local database fixtures and do not validate live cloud credentials or RLS setup.
