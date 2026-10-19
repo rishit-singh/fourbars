@@ -29,6 +29,8 @@ test("anonymous feed uses keyset paging and one active player", async ({ page })
   });
   await page.goto("/");
   await expect(page.locator("article.card")).toHaveCount(12);
+  await expect(page.getByRole("tab", { name: "My Projects" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Profile", exact: true })).toHaveCount(0);
   expect(queries[0].searchParams.get("limit")).toBe("13");
   expect(queries[0].searchParams.get("order")).toBe("published_at.desc,id.desc");
   const cards = page.locator("article.card");

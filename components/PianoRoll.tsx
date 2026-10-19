@@ -172,6 +172,7 @@ export function PianoRoll() {
                   setGroup([...moving]);
                   e.currentTarget.focus({ preventScroll: true });
                   select(n.id);
+                  audition(n.pitch);
                   e.currentTarget.setPointerCapture(e.pointerId);
                   const box = grid.current!.getBoundingClientRect();
                   drag.current = {
