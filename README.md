@@ -42,15 +42,17 @@ The project ref is the first part of your Supabase URL's hostname. CLI account a
 
 ## Product flow
 
-- `/`: Community / My Projects, 12-item cursor pagination, on-demand shared playback.
+- `/`: Community / My Projects, 12-item cursor pagination, player dialogs, likes, and All / Drafts / Published filters. Create opens a confirmation dialog before making a private project.
 - `/editor/new`: authenticated creation of a blank private project.
 - `/editor/[id]`: title, tempo, key metadata, Piano/Bass/Drums, snap 1/4–1/16; click to add, drag to move, right-edge resize, select + Delete/Backspace to remove. Default pitched range C3–B4; drums use MIDI 36/38/42.
 - `/m/[id]`: published snapshot, playback, copy link; owner edit/MIDI/unpublish actions. Old `/melody/[id]` links redirect here.
-- `/login`: email/password signup and sign-in. Global help supports Escape and focus trapping.
+- `/login`: email/password signup and sign-in, confirmation resend cooldowns, and validated return destinations. Piano-roll help lives in the editor and supports Escape and focus trapping.
+
+Signed-in users can set a username and display name from Profile. Google sign-in requires enabling the provider with OAuth credentials in Supabase and setting `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` at build time; it is currently disabled. Email rate limits are enforced by Supabase; production delivery may require custom SMTP.
 
 **Save is private. Publish/Republish is explicit.** Even title changes stay private until republished. Public readers never read the draft table. Switching between pitched and drum rows clears notes after confirmation; piano ↔ bass preserves notes. Key is metadata, not transposition.
 
-Audio uses browser-only Tone.js synths: polyphonic triangle piano, sine bass, and separate membrane/noise/metal drum voices. There are no samples or audio uploads. One shared player owns playback; Stop and navigation dispose it and invalidate pending initialization. MIDI is note data, not playable audio.
+Audio uses browser-only Tone.js synths: polyphonic triangle piano, sine bass, and separate membrane/noise/metal drum voices. There are no samples or audio uploads. One shared player owns playback; Stop and navigation dispose it and invalidate pending initialization. Editor Loop repeats four bars using bounded audio-clock scheduling; turning it off finishes the queued pass. MIDI is note data, not playable audio.
 
 ## Architecture and authorization
 
@@ -60,7 +62,9 @@ Audio uses browser-only Tone.js synths: polyphonic triangle piano, sine bass, an
 - `publications`: public safe metadata and composition snapshot only. Clients have SELECT privilege, no direct writes.
 - `publish_project`: authenticated, ownership-checked, row-locked atomic copy of the saved draft, including title; increments publication version. `unpublish_project` removes the public snapshot without deleting the draft. Deleting a project cascades to its publication.
 - Zustand owns editor state only. Remote hydration resets it per project; signing out clears it. No local draft persistence or cross-user draft cache.
-- Public reads are client-side and refetched on navigation. Feed lists stay in component state; no authenticated Next.js data cache or N+1 user queries. Creator labels use short user IDs.
+- `profiles`: public username/display name, owner-only writes; email is never exposed. `publication_likes`: one like per user/publication, owner-only writes and raw reads, public aggregate counts. Unpublishing removes associated likes.
+- `project_details` and `publication_details`: security-invoker read models add creator names, like counts, and publication status. Saved drafts are compared with snapshots to distinguish Published from Unpublished changes.
+- Public reads are client-side and refetched on navigation. Feed lists stay in component state; no authenticated Next.js data cache or N+1 user queries. Creator labels use profile display names or Anonymous.
 
 ## Checks
 
@@ -77,7 +81,7 @@ npm run build
 
 `npm run format` formats source. Vitest covers quantization/bounds, runtime validation, MIDI timing and percussion channel, and real Postgres RLS/snapshot behavior through **PGlite** (Supabase's auth schema is shimmed). These tests need no cloud credentials.
 
-The Playwright browser test uses installed **Google Chrome**, starts its own Next dev server on port **3001**, and **mocks Supabase HTTP**. It exercises actual pointer editing, audio initialization/stop, failed saves, publication navigation, and help. It does not verify a live Supabase project. Avoid another Next process in this directory during builds/browser tests because they share `.next`.
+The Playwright browser tests use installed **Google Chrome**, start their own Next dev server on port **3001**, and **mock Supabase HTTP**. They exercise pointer editing, audio initialization/stop, failed saves, publication states, help, auth redirects/resend cooldowns, single-project creation, like rollback, profile refresh, and server-side filters. They do not verify a live Supabase project. Avoid another Next process in this directory during builds/browser tests because they share `.next`.
 
 ## Deploy to Cloudflare Workers
 
@@ -98,7 +102,7 @@ Set both `NEXT_PUBLIC_` values **at build time** (local `.env.local`, or Cloudfl
 ## Remaining work / tradeoffs
 
 - **Release verification remaining:** verify signup/login/refresh, save/reopen, anonymous playback, A-vs-B permissions, and republishing against the deployed backend. Supabase URL/key, database schema, and production auth redirects are configured; the live anonymous feed and draft-read denial have been verified.
-- No WAV/MP3/Storage integration, local recovery, undo/redo, optimistic concurrency, multitrack, samples, or social features.
+- No WAV/MP3/Storage integration, local recovery, undo/redo, optimistic concurrency, multitrack, samples, comments, or following.
 - Explicit save only. Link navigation and page unload warn about dirty state. Same-document Back/Forward cancellation uses the Navigation API; browsers without it may not warn on SPA history navigation.
 - Public melody metadata loads client-side; missing/private publications display the same unavailable state rather than a server-rendered HTTP 404. No SEO/share-card rendering yet.
 - Edits from multiple tabs are last-write-wins. Mutable feed ordering can move a republished item between cursor pages; loaded IDs are deduplicated.
