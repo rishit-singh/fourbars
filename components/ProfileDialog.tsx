@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,11 +18,26 @@ import { errorMessage } from "@/lib/errors";
 export function ProfileDialog() {
   const [open, setOpen] = useState(false);
   const [username, setUsername] = useState("");
+  const [savedUsername, setSavedUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [invalidField, setInvalidField] = useState<"username" | "name" | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    getMyProfile()
+      .then((profile) => {
+        if (active) setSavedUsername(profile?.username ?? "");
+      })
+      .catch(() => {
+        // The dialog provides actionable errors when opened.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -34,6 +50,7 @@ export function ProfileDialog() {
       .then((profile) => {
         if (active) {
           setUsername(profile?.username ?? "");
+          setSavedUsername(profile?.username ?? "");
           setDisplayName(profile?.display_name ?? "");
         }
       })
@@ -71,6 +88,7 @@ export function ProfileDialog() {
     setInvalidField(null);
     try {
       await saveMyProfile(normalized, displayName.trim());
+      setSavedUsername(normalized);
       window.dispatchEvent(new Event("fourbars:profile-updated"));
       toast.success("Profile saved");
       setOpen(false);
@@ -93,8 +111,14 @@ export function ProfileDialog() {
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm">
-          Profile
+        <Button
+          variant="ghost"
+          size="sm"
+          className="profile-trigger"
+          aria-label={savedUsername ? `Profile: @${savedUsername}` : "Profile"}
+        >
+          <UserRound data-icon="inline-start" aria-hidden="true" />
+          <span className="truncate">{savedUsername ? `@${savedUsername}` : "Profile"}</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="profile-dialog">
@@ -105,7 +129,7 @@ export function ProfileDialog() {
           </DialogDescription>
         </DialogHeader>
         <form
-          className="flex flex-col gap-4"
+          className="profile-form"
           onSubmit={submit}
           aria-busy={busy}
           aria-describedby={error ? "profile-error" : undefined}
@@ -126,7 +150,10 @@ export function ProfileDialog() {
               aria-describedby="profile-username-help"
             />
           </label>
-          <p id="profile-username-help">3–24 lowercase letters, numbers, or underscores.</p>
+          <p id="profile-username-help">
+            Your unique @handle and profile link. Use 3–24 lowercase letters, numbers, or
+            underscores.
+          </p>
           <label className="flex flex-col gap-1" htmlFor="profile-display-name">
             Display name{" "}
             <input
@@ -138,17 +165,27 @@ export function ProfileDialog() {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               aria-invalid={invalidField === "name"}
+              aria-describedby="profile-display-name-help"
             />
           </label>
+          <p id="profile-display-name-help">
+            The name shown alongside your music. It can include spaces and doesn’t need to be
+            unique.
+          </p>
           {error && (
             <p id="profile-error" role="alert">
               {error}
               {loadFailed && " Close this dialog and try again."}
             </p>
           )}
-          <Button type="submit" disabled={busy || loadFailed}>
-            {busy ? "Please wait…" : "Save profile"}
-          </Button>
+          <div className="profile-actions">
+            <Button type="button" variant="outline" disabled={busy} onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={busy || loadFailed}>
+              {busy ? "Please wait…" : "Save profile"}
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

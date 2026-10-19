@@ -10,9 +10,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ProfileDialog } from "@/components/ProfileDialog";
 import { errorMessage } from "@/lib/errors";
+import { ThemePicker } from "@/components/ThemePicker";
+import "@/app/shell-polish.css";
 export function Shell({ children }: { children: React.ReactNode }) {
-  const [email, setEmail] = useState(""),
-    [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter(),
     pathname = usePathname();
@@ -26,7 +27,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
       const {
         data: { subscription },
       } = s.auth.onAuthStateChange((event, session) => {
-        setEmail(session?.user.email ?? "");
         const nextUser = session?.user.id ?? null;
         setUserId(nextUser);
         const changedAccount =
@@ -46,7 +46,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     }
   }, [router]);
   return (
-    <>
+    <div className="app-shell">
       <header className="header">
         <Link href="/" className="brand">
           <Music2 size={23} /> fourbars
@@ -55,7 +55,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
           {userId ? (
             <>
               <ProfileDialog key={userId} />
-              <span className="identity">{email}</span>
               <Button
                 variant="ghost"
                 size="icon"
@@ -86,7 +85,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
       <main className="container">{children}</main>
-      <footer className="site-footer">Make four bars. Share an idea.</footer>
-    </>
+      <footer className="site-footer">
+        <span>Make four bars. Share an idea.</span>
+        <ThemePicker />
+      </footer>
+    </div>
   );
 }
