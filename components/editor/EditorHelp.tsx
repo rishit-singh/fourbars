@@ -65,8 +65,9 @@ export function EditorHelp() {
           </li>
         </ul>
         <p className="editor-help-footer">
-          Play to listen. Loop repeats your four bars. Save keeps edits private; Publish shares
-          them.
+          Play to listen. Loop repeats your four bars. Press Enter in the title or tempo field to
+          save. Save keeps edits private; Publish shares them. Key is a label and does not transpose
+          notes.
         </p>
       </DialogContent>
     </Dialog>

@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { getProject, updateProject, deleteProject, publishProject } from "@/lib/projects";
@@ -11,8 +11,9 @@ import type { Quantization } from "@/lib/types";
 import { PianoRoll } from "./PianoRoll";
 import { Player } from "./Player";
 import { exportMidi } from "@/lib/audio";
-import { Download, Save, Upload, Trash2, ArrowLeft, Repeat } from "lucide-react";
+import { Download, Save, Upload, Trash2, ArrowLeft, Repeat, Eraser } from "lucide-react";
 import { EditorHelp } from "./editor/EditorHelp";
+import "@/app/toolbar.css";
 
 export function Editor({ id }: { id: string }) {
   const router = useRouter();
@@ -158,6 +159,12 @@ export function Editor({ id }: { id: string }) {
       }
     }
   }
+  function saveOnEnter(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter" || event.nativeEvent.isComposing || event.repeat) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (!busy) void save();
+  }
   if (error && !ready)
     return (
       <section className="empty">
@@ -168,7 +175,7 @@ export function Editor({ id }: { id: string }) {
     );
   if (!ready) return <p role="status">Loading editor…</p>;
   return (
-    <section>
+    <section className="editor-workspace">
       <Link href="/" className="back-link">
         <ArrowLeft size={14} /> Melodies
       </Link>
@@ -181,6 +188,7 @@ export function Editor({ id }: { id: string }) {
             disabled={busy}
             value={state.title}
             onChange={(e) => state.setField({ title: e.target.value })}
+            onKeyDown={saveOnEnter}
           />
           <p role="status">
             {busy
@@ -202,11 +210,13 @@ export function Editor({ id }: { id: string }) {
           </p>
         </div>
         <div className="actions" role="group" aria-label="Project actions">
-          {(state.dirty || (busy && action !== "delete") || error) && (
-            <button className="outline" disabled={busy} onClick={() => save()}>
-              <Save size={16} /> Save
-            </button>
-          )}
+          <button
+            className="outline"
+            disabled={busy || (!state.dirty && !error)}
+            onClick={() => save()}
+          >
+            <Save size={16} /> Save
+          </button>
           <button
             className="primary"
             disabled={busy || !state.notes.length || (published && !unpublishedChanges)}
@@ -253,21 +263,23 @@ export function Editor({ id }: { id: string }) {
               }
             }}
           >
-            <Trash2 size={15} /> Delete project
+            <Trash2 size={16} /> Delete project
           </button>
         </div>
       </div>
-      <div className="transport">
-        <Player notes={state.notes} bpm={state.bpm} instrument={state.instrument} loop={loop} />
-        <button
-          type="button"
-          className={loop ? "primary" : "outline"}
-          aria-pressed={loop}
-          title="Repeat four bars. Turning Loop off finishes the queued pass; Stop ends playback immediately."
-          onClick={() => setLoop(!loop)}
-        >
-          <Repeat size={16} /> Loop
-        </button>
+      <div className="transport" role="group" aria-label="Playback controls">
+        <div className="toolbar-playback">
+          <Player notes={state.notes} bpm={state.bpm} instrument={state.instrument} loop={loop} />
+          <button
+            type="button"
+            className={loop ? "primary" : "outline"}
+            aria-pressed={loop}
+            title="Repeat four bars. Turning Loop off finishes the queued pass; Stop ends playback immediately."
+            onClick={() => setLoop(!loop)}
+          >
+            <Repeat size={16} /> Loop
+          </button>
+        </div>
         <label>
           Tempo{" "}
           <input
@@ -278,13 +290,14 @@ export function Editor({ id }: { id: string }) {
             disabled={busy}
             value={state.bpm || ""}
             onChange={(e) => state.setField({ bpm: Number(e.target.value) })}
+            onKeyDown={saveOnEnter}
           />{" "}
           BPM
         </label>
         <span>4 bars · 4/4 · 16 beats</span>
       </div>
       <fieldset disabled={busy} className="editor-fields">
-        <div className="controls">
+        <div className="controls" role="group" aria-label="Editing controls">
           <label>
             Preset
             <select
@@ -330,16 +343,19 @@ export function Editor({ id }: { id: string }) {
               <option value={0.25}>1/16 note · ¼ beat</option>
             </select>
           </label>
-          <span className="control-note">Key is a label, not transposition.</span>
-          <EditorHelp />
-          <button
-            className="subtle"
-            onClick={() => {
-              if (confirm("Clear all notes?")) state.clear();
-            }}
-          >
-            Clear
-          </button>
+          <div className="toolbar-edit-actions">
+            <button
+              type="button"
+              className="outline"
+              disabled={!state.notes.length}
+              onClick={() => {
+                if (confirm("Clear all notes?")) state.clear();
+              }}
+            >
+              <Eraser size={16} /> Clear notes
+            </button>
+            <EditorHelp />
+          </div>
         </div>
         <PianoRoll />
       </fieldset>

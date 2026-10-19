@@ -1,0 +1,97 @@
+.editor-workspace .editor-heading {
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.editor-workspace .actions,
+.editor-workspace .toolbar-playback,
+.editor-workspace .toolbar-edit-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.editor-workspace .actions button,
+.editor-workspace .transport button,
+.editor-workspace .toolbar-edit-actions button {
+  min-height: 36px;
+  white-space: nowrap;
+}
+
+.editor-workspace .actions button svg,
+.editor-workspace .transport button svg,
+.editor-workspace .toolbar-edit-actions button svg {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.editor-workspace .editor-heading .actions .danger {
+  margin-left: 0;
+}
+
+.editor-workspace .transport {
+  padding: 10px 12px;
+  gap: 12px 20px;
+  margin-bottom: 10px;
+}
+
+.editor-workspace .transport > span {
+  font-size: 12px;
+}
+
+.editor-workspace .transport label {
+  font-size: 12px;
+}
+
+.editor-workspace .controls {
+  align-items: flex-end;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.editor-workspace .controls label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.editor-workspace .controls select,
+.editor-workspace .transport input {
+  min-height: 36px;
+  padding: 6px 8px;
+}
+
+.editor-workspace .controls select {
+  width: 100%;
+  min-width: 96px;
+}
+
+.editor-workspace .toolbar-edit-actions {
+  padding-left: 4px;
+}
+
+@media (max-width: 640px) {
+  .editor-workspace .actions button,
+  .editor-workspace .transport button,
+  .editor-workspace .toolbar-edit-actions button,
+  .editor-workspace .controls select,
+  .editor-workspace .transport input {
+    min-height: 44px;
+  }
+
+  .editor-workspace .controls label {
+    flex: 1 1 100px;
+  }
+
+  .editor-workspace .toolbar-edit-actions {
+    flex-basis: 100%;
+    padding-left: 0;
+  }
+}
