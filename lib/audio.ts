@@ -4,7 +4,8 @@ import { compositionSchema } from "./validation";
 
 type Playback = {
   owner: string | null;
-  status: "idle" | "loading" | "playing";
+  status: "idle" | "loading" | "playing" | "paused";
+  position?: number;
   started: number;
   duration: number;
   loop: boolean;
@@ -16,6 +17,7 @@ const listeners = new Set<() => void>();
 let generation = 0;
 let dispose: (() => void) | undefined;
 let schedule: ReturnType<typeof createPlaybackSchedule> | undefined;
+let composition: { notes: Note[]; bpm: number; instrument: Instrument } | undefined;
 function emit(value: Playback) {
   state = value;
   listeners.forEach((fn) => fn());
@@ -28,7 +30,7 @@ export const subscribePlayback = (fn: () => void) => {
 };
 export const getPlayback = () => state;
 export const getServerPlayback = () => idle;
-export const getPlaybackElapsed = () => schedule?.position() ?? 0;
+export const getPlaybackElapsed = () => schedule?.position() ?? state.position ?? 0;
 
 /** A bounded audio-clock scheduler: at most one future pass is queued, never restarted. */
 export function createPlaybackSchedule({
@@ -108,22 +110,58 @@ export function stopAudio(owner?: string) {
   const cleanup = dispose;
   dispose = undefined;
   schedule = undefined;
+  composition = undefined;
   cleanup?.();
   emit(idle);
 }
+
+export function pauseAudio(owner: string) {
+  if (state.owner !== owner || state.status !== "playing") return;
+  const paused = { ...state, status: "paused" as const, position: getPlaybackElapsed() };
+  const saved = composition;
+  stopAudio(owner);
+  composition = saved;
+  emit(paused);
+}
+
+export async function resumeAudio(owner: string) {
+  if (state.owner !== owner || state.status !== "paused" || !composition) return;
+  const { notes, bpm, instrument } = composition;
+  const position = (state.position ?? 0) >= state.duration ? 0 : state.position;
+  await playNotes(notes, bpm, instrument, owner, state.loop, position);
+}
+
+export async function seekAudio(owner: string, position: number) {
+  if (state.owner !== owner || !composition || !Number.isFinite(position)) return;
+  position = Math.max(0, Math.min(state.duration, position));
+  if (state.status === "loading") {
+    const { notes, bpm, instrument } = composition;
+    await playNotes(notes, bpm, instrument, owner, state.loop, position);
+    return;
+  }
+  const playing = state.status === "playing";
+  if (playing) pauseAudio(owner);
+  if (state.status !== "paused") return;
+  emit({ ...state, position });
+  if (playing && position < state.duration) await resumeAudio(owner);
+}
+
 export async function playNotes(
   notes: Note[],
   bpm: number,
   instrument: Instrument,
   owner: string,
   loop = false,
+  offset = 0,
 ) {
   notes = compositionSchema.parse({ notes, bpm, instrument, key: "C" }).notes;
   if (!notes.length) throw new Error("Add a note first");
   stopAudio();
   const token = generation;
   const duration = (16 * 60) / bpm;
-  emit({ owner, status: "loading", started: 0, duration, loop });
+  offset = Number.isFinite(offset) ? Math.max(0, Math.min(duration, offset)) : 0;
+  composition = { notes, bpm, instrument };
+  emit({ owner, status: "loading", started: 0, duration, loop, position: offset });
   const resources: { dispose: () => unknown }[] = [];
   let ownSchedule: ReturnType<typeof createPlaybackSchedule> | undefined;
   const cleanup = () => {
@@ -143,7 +181,8 @@ export async function playNotes(
     // Keep every voice behind one gain node; disposing it silences even future scheduled notes.
     const output = new Tone.Gain(0.6).toDestination();
     resources.push(output);
-    const start = Tone.now() + 0.08;
+    const audibleStart = Tone.now() + 0.08;
+    const start = audibleStart - offset;
     let trigger: (note: Note, at: number) => void;
     if (instrument === "drums") {
       const kick = new Tone.MembraneSynth({
@@ -208,7 +247,12 @@ export async function playNotes(
         if (token !== generation) return;
         for (const n of ordered) {
           const time = at + (n.start * 60) / bpm;
-          if (time >= skipBefore) trigger(n, time);
+          const boundary = Math.max(skipBefore, audibleStart);
+          if (time >= boundary) trigger(n, time);
+          else if (offset > 0 && at === start && instrument !== "drums") {
+            const remaining = time + (n.duration * 60) / bpm - boundary;
+            if (remaining > 0) trigger({ ...n, duration: (remaining * bpm) / 60 }, boundary);
+          }
         }
       },
       finish: () => {
@@ -259,6 +303,7 @@ export async function playNotes(
     if (token === generation) {
       dispose = undefined;
       schedule = undefined;
+      composition = undefined;
       emit(idle);
       throw e;
     }

@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import type { Project } from "@/lib/types";
 import { Player } from "./Player";
 import {
@@ -20,7 +21,7 @@ export function MelodyPlayerDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="flex h-[100dvh] w-screen max-w-none flex-col justify-center overflow-y-auto rounded-none p-6 sm:h-auto sm:max-h-[90dvh] sm:max-w-lg sm:rounded-lg">
         <DialogHeader>
           <DialogTitle>{melody?.title ?? "Melody"}</DialogTitle>
           <DialogDescription>
@@ -53,6 +54,9 @@ export function MelodyPlayerDialog({
               bpm={melody.bpm}
               instrument={melody.instrument}
             />
+            <Link href={`/m/${melody.id}`} className="text-sm underline underline-offset-4">
+              Open full page
+            </Link>
           </>
         )}
       </DialogContent>
