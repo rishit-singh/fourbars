@@ -1,0 +1,8 @@
+project_id = "fourbars"
+
+[auth]
+site_url = "https://fourbars.rsrishitsingh.workers.dev"
+additional_redirect_urls = [
+  "https://fourbars.rsrishitsingh.workers.dev/login",
+  "http://localhost:3000/login",
+]

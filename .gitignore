@@ -1,0 +1,13 @@
+node_modules
+.next
+.open-next
+.env*
+!.env.example
+.wrangler
+.dev.vars*
+*.tsbuildinfo
+coverage
+test-results
+playwright-report
+supabase/.temp/
+supabase/.branches/

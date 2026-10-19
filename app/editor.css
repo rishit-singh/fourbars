@@ -1,0 +1,347 @@
+.section-heading {
+  align-items: center;
+}
+.section-heading h1 {
+  margin-top: 12px;
+  font-size: 42px;
+  letter-spacing: -1.5px;
+}
+.create-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.site-footer {
+  max-width: 1220px;
+  margin: auto;
+  padding: 20px 22px;
+  color: #78869d;
+  border-top: 1px solid #27313f;
+  font-size: 12px;
+}
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #9ca7ba;
+  margin: 0 0 20px;
+  font-size: 12px;
+}
+.editor-fields {
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.editor-fields:disabled {
+  pointer-events: none;
+  opacity: 0.7;
+}
+.control-note,
+.editor-note {
+  font-size: 12px;
+  color: #a4afc1;
+}
+.editor-note {
+  margin-top: 12px;
+}
+.controls .control-note {
+  margin-right: auto;
+}
+.roll-ruler {
+  height: 32px;
+  position: relative;
+  background: #202a38;
+  color: #a2aec1;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.roll-ruler span {
+  padding: 8px;
+  display: block;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+.roll-ruler b {
+  position: absolute;
+  top: 7px;
+  padding-left: 8px;
+}
+.key-column,
+.key {
+  width: 64px;
+}
+.key {
+  display: flex;
+  align-items: center;
+}
+.note {
+  padding: 0;
+  display: block;
+}
+.note.selected {
+  background: #c7d2fe;
+  box-shadow: 0 0 0 1px #eef2ff;
+}
+.note-handle {
+  width: min(12px, 35%);
+  border-radius: 0 2px 2px 0;
+  border-left: 1px solid #dce3ff;
+  background: #788ae1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.note-handle::after {
+  content: "";
+  width: 3px;
+  height: 55%;
+  border-left: 1px solid #eef2ff;
+  border-right: 1px solid #eef2ff;
+  pointer-events: none;
+}
+.note:hover {
+  background: #bec9ff;
+}
+.note:focus-visible {
+  outline-offset: 1px;
+}
+.card-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  font-size: 12px;
+  color: #a4afc1;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.card-info strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.project-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 20px;
+}
+.text-link {
+  font-size: 12px;
+  color: var(--primary);
+  text-underline-offset: 4px;
+}
+.text-link:hover {
+  text-decoration: underline;
+}
+.profile-dialog input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-height: 44px;
+  color: var(--foreground);
+  background: var(--secondary);
+}
+.profile-dialog label {
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.profile-dialog p,
+.login .form-hint {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0;
+}
+.login .form-hint {
+  margin-top: 20px;
+}
+.empty h2 {
+  margin-top: 16px;
+}
+.empty > svg {
+  margin: auto;
+  color: #a5b4fc;
+}
+.empty .primary {
+  display: inline-flex;
+}
+.loading-card {
+  min-height: 170px;
+  color: #9ca7ba;
+}
+.player-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.playback-progress {
+  display: flex;
+  flex-direction: column;
+  width: 75px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: #a5adba;
+}
+.playback-progress progress {
+  width: 100%;
+  height: 3px;
+  accent-color: #a5b4fc;
+}
+.card .player-wrap {
+  position: relative;
+}
+.card .playback-progress {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  width: 40px;
+}
+.card .playback-progress small {
+  display: none;
+}
+.help-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  list-style: decimal;
+  padding-left: 20px;
+  font-size: 14px;
+  color: #c5cede;
+}
+.editor-help-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin: 8px 0;
+}
+.editor-help-steps li {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.help-icon {
+  width: 24px;
+  flex-shrink: 0;
+  color: var(--primary);
+}
+.help-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.editor-help-steps strong {
+  display: inline-block;
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+.editor-help-steps p,
+.editor-help-footer {
+  font-size: 13px;
+  margin: 0;
+}
+.editor-help-footer {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.help-note {
+  display: inline-block;
+  width: 52px;
+  height: 15px;
+  margin-left: 12px;
+  border: 1px solid #d7deff;
+  border-radius: 3px;
+  vertical-align: middle;
+  background: var(--primary);
+}
+.help-note span {
+  display: block;
+  float: right;
+  width: 12px;
+  height: 100%;
+  border-left: 1px solid #dce3ff;
+  background: repeating-linear-gradient(90deg, #788ae1, #788ae1 3px, #dce3ff 3px, #dce3ff 4px);
+}
+[data-slot="dialog-content"] {
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+}
+.editor-heading > div:first-child {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+.editor-heading .actions {
+  gap: 8px;
+}
+.editor-heading .actions .danger {
+  margin-left: 8px;
+}
+.transport button[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 1px #dce3ff;
+}
+.roll-hint {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.primary:hover:not(:disabled) {
+  background: #bbc6ff;
+}
+.outline:hover:not(:disabled),
+.subtle:hover:not(:disabled) {
+  background: #2a3443;
+}
+.danger:hover:not(:disabled) {
+  background: #40252e;
+}
+:focus-visible {
+  outline: 2px solid #a5b4fc;
+  outline-offset: 3px;
+}
+@media (max-width: 640px) {
+  .section-heading h1 {
+    font-size: 34px;
+  }
+  .control-note {
+    flex-basis: 100%;
+  }
+  .title-input {
+    font-size: 24px;
+  }
+  .roll-hint {
+    font-size: 12px;
+  }
+  .editor-heading > div:first-child {
+    flex-basis: auto;
+    width: 100%;
+  }
+  .editor-heading .actions {
+    width: 100%;
+  }
+  .editor-heading .actions .danger {
+    margin-left: auto;
+  }
+  .controls label {
+    flex: 1 1 130px;
+    justify-content: space-between;
+  }
+  .controls select {
+    min-height: 44px;
+    min-width: 84px;
+  }
+}
