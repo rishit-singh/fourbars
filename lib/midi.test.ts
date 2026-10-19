@@ -2,6 +2,24 @@ import { Midi } from "@tonejs/midi";
 import { describe, expect, it } from "vitest";
 import { buildMidi } from "./midi";
 describe("MIDI round trip", () => {
+  it.each(["piano", "bass"] as const)("exports the %s General MIDI program", (instrument) => {
+    const midi = new Midi(
+      buildMidi(
+        {
+          bpm: 120,
+          key: "C",
+          instrument,
+          notes: [{ id: "n", pitch: 60, start: 0, duration: 1, velocity: 100 }],
+        },
+        "Instrument",
+      ),
+    );
+    expect(midi.tracks[0].channel).toBe(0);
+    expect(midi.tracks[0].instrument.number).toBe(instrument === "bass" ? 33 : 0);
+    expect(midi.tracks[0].instrument.name).toBe(
+      instrument === "bass" ? "electric bass (finger)" : "acoustic grand piano",
+    );
+  });
   it.each([60, 120, 240])("preserves timing at %s BPM", (bpm) => {
     const midi = new Midi(
       buildMidi(

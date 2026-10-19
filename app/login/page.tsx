@@ -244,10 +244,6 @@ export default function Login() {
           {signup ? "Already have an account? Sign in" : "Create an account"}
         </Button>
       </form>
-      <p className="form-hint">
-        Your browser or password manager may autofill these fields. Fourbars does not save this
-        form.
-      </p>
       {error && (
         <p id="auth-error" className="error" role="alert">
           {error}

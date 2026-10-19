@@ -1,4 +1,5 @@
 "use client";
+import "@/app/player.css";
 import { useEffect, useId, useState, useSyncExternalStore } from "react";
 import { Play, Pause, Square, LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -38,7 +39,9 @@ export function Player({
       : playback.status === "paused"
         ? "Resume playback"
         : "Pause playback";
-  useEffect(() => () => stopAudio(id), [id]);
+  // A paused or scheduled performance owns its original voice and tempo.
+  // Discard it when either changes so Play uses the current editor settings.
+  useEffect(() => () => stopAudio(id), [id, instrument, bpm]);
   useEffect(() => setPlaybackLoop(id, loop), [id, loop]);
   useEffect(() => {
     if (playback.error?.owner === id) toast.error(playback.error.message);
@@ -49,7 +52,7 @@ export function Player({
     return () => clearInterval(timer);
   }, [active, playback]);
   return (
-    <div className="player-wrap">
+    <div className="player-controls">
       <button
         className="player"
         disabled={!active && !notes.length}
@@ -96,7 +99,7 @@ export function Player({
         </button>
       )}
       {active && (
-        <div className="playback-progress">
+        <div className="player-timeline">
           <input
             type="range"
             aria-label="Playback position"

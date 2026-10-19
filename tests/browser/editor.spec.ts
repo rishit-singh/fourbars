@@ -90,10 +90,20 @@ test("editor interactions, playback, failed save, publish and help (mock HTTP)",
     if (url.pathname.endsWith("/publication_details")) return route.fulfill({ json: publication });
     return route.fulfill({ json: {} });
   });
+  await page.setViewportSize({ width: 1660, height: 1000 });
   await page.goto(`/editor/${id}`);
-  await expect(page.getByLabel("Melody title")).toHaveValue("Test sketch");
+  await expect(page.getByRole("textbox", { name: "Melody title", exact: true })).toHaveValue(
+    "Test sketch",
+  );
   const grid = page.locator(".roll-grid");
   const beatWidth = (await grid.boundingBox())!.width / 16;
+  const rollWidth = await page
+    .locator(".roll")
+    .evaluate((element) => element.getBoundingClientRect().width);
+  const containerWidth = await page
+    .locator(".roll-scroll")
+    .evaluate((element) => element.clientWidth);
+  expect(Math.abs(rollWidth - containerWidth)).toBeLessThan(3);
   // Clicking just before the subdivision boundary must stay in that subdivision.
   await grid.click({ position: { x: beatWidth * 0.47, y: 11 * 24 + 10 } });
   const first = page.locator(".note").first();
@@ -129,6 +139,8 @@ test("editor interactions, playback, failed save, publish and help (mock HTTP)",
   expect(Number(await position.inputValue())).toBeLessThan(4);
   await page.getByRole("button", { name: "Stop playback" }).click();
   await expect(position).toHaveCount(0);
+  await page.getByRole("combobox", { name: "Preset", exact: true }).selectOption("bass");
+  await expect(page.getByRole("combobox", { name: "Preset", exact: true })).toHaveValue("bass");
   failSave = true;
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.locator(".error")).toHaveText("Save unavailable");
@@ -138,9 +150,18 @@ test("editor interactions, playback, failed save, publish and help (mock HTTP)",
   await expect(page.getByRole("status")).toContainText("Saved");
   await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
   expect(project.notes[0]).toMatchObject({ pitch: 62, start: 2, duration: 1.5 });
-  await first.click();
+  expect(project.instrument).toBe("bass");
+  await grid.click({ position: { x: beatWidth * 6, y: 10 * 24 + 10 } });
+  await page.getByRole("radio", { name: "Select", exact: true }).click();
+  const gridBox = (await grid.boundingBox())!;
+  await page.mouse.move(gridBox.x + beatWidth, gridBox.y + 8 * 24);
+  await page.mouse.down();
+  await page.mouse.move(gridBox.x + beatWidth * 7, gridBox.y + 12 * 24, { steps: 5 });
+  await page.mouse.up();
+  await expect(page.locator('.note[aria-pressed="true"]')).toHaveCount(2);
   await page.keyboard.press("Delete");
   await expect(page.locator(".note")).toHaveCount(0);
+  await page.getByRole("radio", { name: "Draw", exact: true }).click();
   await page.getByRole("combobox", { name: "Preset", exact: true }).selectOption("drums");
   await grid.click({ position: { x: 10, y: 2 * 96 + 10 } });
   await expect(page.locator(".note")).toHaveAttribute(
@@ -156,10 +177,11 @@ test("editor interactions, playback, failed save, publish and help (mock HTTP)",
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("button", { name: "Publish", exact: true }).click();
   await expect(page).toHaveURL(`/m/${id}`);
+  expect(project.instrument).toBe("drums");
   await expect(page.getByRole("heading", { name: "Test sketch" })).toBeVisible();
   await page.getByRole("link", { name: "Edit draft" }).click();
   await expect(page.getByRole("button", { name: "Published", exact: true })).toBeDisabled();
-  await page.getByLabel("Melody title").fill("Private revision");
+  await page.getByRole("textbox", { name: "Melody title", exact: true }).fill("Private revision");
   await expect(page.getByRole("button", { name: "Republish", exact: true })).toBeEnabled();
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Unpublished changes");

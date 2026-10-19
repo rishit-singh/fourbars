@@ -11,7 +11,7 @@ import type { Quantization } from "@/lib/types";
 import { PianoRoll } from "./PianoRoll";
 import { Player } from "./Player";
 import { exportMidi } from "@/lib/audio";
-import { Download, Save, Upload, Trash2, ArrowLeft, Repeat, Eraser } from "lucide-react";
+import { Download, Save, Upload, Trash2, ArrowLeft, Repeat, Eraser, Pencil } from "lucide-react";
 import { EditorHelp } from "./editor/EditorHelp";
 import "@/app/toolbar.css";
 
@@ -25,6 +25,8 @@ export function Editor({ id }: { id: string }) {
     [ready, setReady] = useState(false);
   const [action, setAction] = useState<"save" | "publish" | "delete">("save");
   const [loop, setLoop] = useState(false);
+  const [mode, setMode] = useState<"draw" | "select">("draw");
+  const titleInput = useRef<HTMLInputElement>(null);
   const published = state.publicationStatus !== "draft";
   const unpublishedChanges = state.publicationStatus === "changed" || state.dirty;
   useEffect(() => {
@@ -181,15 +183,30 @@ export function Editor({ id }: { id: string }) {
       </Link>
       <div className="editor-heading">
         <div>
-          <input
-            aria-label="Melody title"
-            className="title-input"
-            maxLength={80}
-            disabled={busy}
-            value={state.title}
-            onChange={(e) => state.setField({ title: e.target.value })}
-            onKeyDown={saveOnEnter}
-          />
+          <div className="editor-title-row">
+            <input
+              ref={titleInput}
+              aria-label="Melody title"
+              className="title-input"
+              maxLength={80}
+              disabled={busy}
+              value={state.title}
+              onChange={(e) => state.setField({ title: e.target.value })}
+              onKeyDown={saveOnEnter}
+            />
+            <button
+              type="button"
+              className="outline editor-title-edit"
+              aria-label="Edit melody title"
+              disabled={busy}
+              onClick={() => {
+                titleInput.current?.focus();
+                titleInput.current?.select();
+              }}
+            >
+              <Pencil size={16} />
+            </button>
+          </div>
           <p role="status">
             {busy
               ? action === "publish"
@@ -298,6 +315,28 @@ export function Editor({ id }: { id: string }) {
       </div>
       <fieldset disabled={busy} className="editor-fields">
         <div className="controls" role="group" aria-label="Editing controls">
+          <div className="roll-mode" role="radiogroup" aria-label="Piano roll mode">
+            <label>
+              <input
+                type="radio"
+                name="roll-mode"
+                value="draw"
+                checked={mode === "draw"}
+                onChange={() => setMode("draw")}
+              />{" "}
+              Draw
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="roll-mode"
+                value="select"
+                checked={mode === "select"}
+                onChange={() => setMode("select")}
+              />{" "}
+              Select
+            </label>
+          </div>
           <label>
             Preset
             <select
@@ -357,7 +396,7 @@ export function Editor({ id }: { id: string }) {
             <EditorHelp />
           </div>
         </div>
-        <PianoRoll />
+        <PianoRoll mode={mode} />
       </fieldset>
       {published && (
         <p className="editor-note">

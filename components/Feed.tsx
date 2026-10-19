@@ -305,6 +305,7 @@ export function Feed() {
       <CreateProjectDialog open={createOpen} onOpenChange={setCreateOpen} signedIn={!!userId} />
       <MelodyPlayerDialog
         melody={selected}
+        destination={mine ? "editor" : "public"}
         open={!!selected}
         onOpenChange={(open) => {
           if (!open) setSelected(null);

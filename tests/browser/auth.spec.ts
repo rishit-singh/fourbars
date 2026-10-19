@@ -59,6 +59,8 @@ test("sign-in resumes creation and StrictMode creates only one project", async (
   await page.getByLabel("Password", { exact: true }).fill("test-password");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(`/editor/${projectId}`);
-  await expect(page.getByLabel("Melody title")).toHaveValue("First sketch");
+  await expect(page.getByRole("textbox", { name: "Melody title", exact: true })).toHaveValue(
+    "First sketch",
+  );
   expect(creates).toBe(1);
 });

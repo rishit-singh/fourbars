@@ -2,17 +2,30 @@
 
 import { useEffect, useState } from "react";
 
-type Theme = "dark" | "darker";
+type Theme = "studio" | "midnight" | "graphite";
 const storageKey = "fourbars:theme";
 
+function resolveTheme(value: string | null): Theme {
+  if (value === "midnight" || value === "darker") return "midnight";
+  if (value === "graphite") return "graphite";
+  return "studio";
+}
+
 export function ThemePicker() {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>("studio");
 
   useEffect(() => {
     function apply(value: string | null) {
-      const next = value === "darker" ? "darker" : "dark";
+      const next = resolveTheme(value);
       setTheme(next);
       document.documentElement.dataset.theme = next;
+      if (value === "dark" || value === "darker") {
+        try {
+          localStorage.setItem(storageKey, next);
+        } catch {
+          // The migrated theme still applies when storage is unavailable.
+        }
+      }
     }
     try {
       apply(localStorage.getItem(storageKey));
@@ -39,9 +52,10 @@ export function ThemePicker() {
   return (
     <label className="theme-picker">
       <span>Appearance</span>
-      <select value={theme} onChange={(event) => change(event.target.value as Theme)}>
-        <option value="dark">Dark</option>
-        <option value="darker">Darker</option>
+      <select value={theme} onChange={(event) => change(resolveTheme(event.target.value))}>
+        <option value="studio">Studio · Amber</option>
+        <option value="midnight">Midnight · Blue</option>
+        <option value="graphite">Graphite · Violet</option>
       </select>
     </label>
   );

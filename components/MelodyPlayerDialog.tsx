@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import type { Project } from "@/lib/types";
+import { Button } from "@/components/ui/button";
 import { Player } from "./Player";
 import {
   Dialog,
@@ -14,11 +16,14 @@ export function MelodyPlayerDialog({
   melody,
   open,
   onOpenChange,
+  destination = "public",
 }: {
   melody: Project | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  destination?: "editor" | "public";
 }) {
+  const pageLabel = destination === "editor" ? "Open in editor" : "Open full page";
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[100dvh] w-screen max-w-none flex-col justify-center overflow-y-auto rounded-none p-6 sm:h-auto sm:max-h-[90dvh] sm:max-w-lg sm:rounded-lg">
@@ -54,9 +59,15 @@ export function MelodyPlayerDialog({
               bpm={melody.bpm}
               instrument={melody.instrument}
             />
-            <Link href={`/m/${melody.id}`} className="text-sm underline underline-offset-4">
-              Open full page
-            </Link>
+            <Button asChild variant="ghost" size="icon-sm" className="self-end">
+              <Link
+                href={`/${destination === "editor" ? "editor" : "m"}/${melody.id}`}
+                aria-label={pageLabel}
+                title={pageLabel}
+              >
+                <ArrowUpRight aria-hidden="true" />
+              </Link>
+            </Button>
           </>
         )}
       </DialogContent>

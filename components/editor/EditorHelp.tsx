@@ -30,7 +30,7 @@ export function EditorHelp() {
             </span>
             <div>
               <strong>Place a note</strong>
-              <p>Click an empty grid cell. Snap controls the size of each subdivision.</p>
+              <p>Choose Draw, then click an empty grid cell. Snap sets the subdivision.</p>
             </div>
           </li>
           <li>
@@ -38,8 +38,12 @@ export function EditorHelp() {
               <Move />
             </span>
             <div>
-              <strong>Move the note body</strong>
-              <p>Drag the wide part left or right for time, up or down for pitch.</p>
+              <strong>Select and move notes</strong>
+              <p>
+                Choose Select and drag a box around notes. Shift-click toggles a note in the
+                selection. Drag a selected note body to move the group in time or pitch. Escape
+                clears the selection.
+              </p>
             </div>
           </li>
           <li>
@@ -59,8 +63,10 @@ export function EditorHelp() {
               <Delete />
             </span>
             <div>
-              <strong>Delete a selected note</strong>
-              <p>Click a note, then press Delete or Backspace. Right-click also removes it.</p>
+              <strong>Delete selected notes</strong>
+              <p>
+                Press Delete or Backspace to remove the selection. Right-click removes one note.
+              </p>
             </div>
           </li>
         </ul>

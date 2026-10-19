@@ -96,6 +96,7 @@
 }
 
 .theme-picker select {
+  max-width: 170px;
   padding: 6px 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -103,18 +104,249 @@
   color: var(--foreground);
 }
 
-html[data-theme="darker"] {
-  --background: #090b10;
-  --secondary: #1b222e;
-  --popover: #141923;
+html[data-theme="studio"] {
+  --background: #181816;
+  --foreground: #f1eee7;
+  --primary: #e9b35f;
+  --primary-foreground: #251b0c;
+  --secondary: #35342f;
+  --muted-foreground: #b5b0a5;
+  --popover: #242420;
+  --border: #49473e;
+  --roll-background: #1d1e1a;
+  --grid-line: #30322b;
+  --beat-line: #45473d;
+  --bar-line: #777665;
+  --key-white: #d9d6cc;
+  --key-ink: #292920;
+  --key-black: #383930;
+  --note-edge: #f5d49d;
+  --note-selected: #ffe0a8;
+  --note-handle: #9f6c29;
 }
 
-html[data-theme="darker"] body {
+html[data-theme="midnight"] {
+  --background: #101722;
+  --foreground: #e9f0fa;
+  --primary: #78b8f0;
+  --primary-foreground: #102338;
+  --secondary: #26374b;
+  --muted-foreground: #a8b9ce;
+  --popover: #192535;
+  --border: #3a4f68;
+  --roll-background: #131e2c;
+  --grid-line: #253449;
+  --beat-line: #3b5069;
+  --bar-line: #657e9e;
+  --key-white: #d3dfec;
+  --key-ink: #243347;
+  --key-black: #2b3c51;
+  --note-edge: #b6dcff;
+  --note-selected: #c6e6ff;
+  --note-handle: #376b9b;
+}
+
+html[data-theme="graphite"] {
+  --background: #1b1a20;
+  --foreground: #f0edf7;
+  --primary: #b7a0ed;
+  --primary-foreground: #241b35;
+  --secondary: #37323f;
+  --muted-foreground: #b8b0c5;
+  --popover: #27242e;
+  --border: #4c4559;
+  --roll-background: #211e28;
+  --grid-line: #332e3d;
+  --beat-line: #4a4259;
+  --bar-line: #7c708f;
+  --key-white: #ded9e7;
+  --key-ink: #302939;
+  --key-black: #3c3546;
+  --note-edge: #d9c9ff;
+  --note-selected: #e5d9ff;
+  --note-handle: #71559f;
+}
+
+html[data-theme] {
+  --popover-foreground: var(--foreground);
+  color-scheme: dark;
+  accent-color: var(--primary);
+}
+
+html[data-theme] body {
   background: var(--background);
+  color: var(--foreground);
 }
 
-html[data-theme="darker"] .card {
+html[data-theme] :is(.card, .transport, .detail-player, .modal) {
   background: var(--popover);
+  border-color: var(--border);
+}
+
+html[data-theme] :is(.header, .tabs, .empty, .site-footer) {
+  border-color: var(--border);
+}
+
+html[data-theme] :is(.brand, .title-input, .help-steps) {
+  color: var(--foreground);
+}
+
+html[data-theme]
+  :is(
+    p,
+    .identity,
+    .card-info small,
+    .card-meta,
+    .empty,
+    .loading-card,
+    .back-link,
+    .control-note,
+    .editor-note,
+    .playback-progress,
+    .transport > span,
+    .controls label,
+    .tabs button
+  ) {
+  color: var(--muted-foreground);
+}
+
+html[data-theme] :is(.primary, .player) {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+html[data-theme] .primary:hover:not(:disabled) {
+  background: var(--note-selected);
+}
+
+html[data-theme] .outline {
+  background: var(--popover);
+  border-color: var(--border);
+}
+
+html[data-theme] :is(.outline, .subtle):hover:not(:disabled) {
+  background: var(--secondary);
+}
+
+html[data-theme] :is(.controls select, .transport input, .login input) {
+  background: var(--secondary);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+html[data-theme] :is(.eyebrow, .empty > svg) {
+  color: var(--primary);
+}
+
+html[data-theme] .tabs button.active {
+  color: var(--foreground);
+  border-bottom-color: var(--primary);
+}
+
+html[data-theme] .title-input:focus {
+  border-color: var(--primary);
+}
+
+html[data-theme] :focus-visible {
+  outline-color: var(--primary);
+}
+
+html[data-theme] ::selection {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+html[data-theme] .playback-progress progress {
+  accent-color: var(--primary);
+}
+
+html[data-theme] .transport button[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 1px var(--note-edge);
+}
+
+html[data-theme] .roll-scroll {
+  background: var(--roll-background);
+  border-color: var(--border);
+}
+
+html[data-theme] :is(.roll-ruler, .roll-hint) {
+  background: var(--popover);
+  color: var(--muted-foreground);
+}
+
+html[data-theme] .key {
+  background: var(--key-white);
+  color: var(--key-ink);
+  border-color: var(--bar-line);
+}
+
+html[data-theme] .key.black {
+  background: var(--key-black);
+  color: var(--foreground);
+}
+
+html[data-theme] .roll-grid {
+  background-color: var(--roll-background);
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+}
+
+html[data-theme] .barline {
+  border-color: var(--beat-line);
+}
+
+html[data-theme] .barline.heavy {
+  border-color: var(--bar-line);
+}
+
+html[data-theme] :is(.note, .help-note) {
+  background: var(--primary);
+  border-color: var(--note-edge);
+}
+
+html[data-theme] .note:hover {
+  background: var(--note-edge);
+}
+
+html[data-theme] .note.selected {
+  background: var(--note-selected);
+  border-color: var(--foreground);
+  box-shadow: 0 0 0 1px var(--foreground);
+}
+
+html[data-theme] .note-handle {
+  background: var(--note-handle);
+  border-color: var(--note-edge);
+}
+
+html[data-theme] .note-handle::after {
+  border-color: var(--note-selected);
+}
+
+html[data-theme] .help-note span {
+  border-color: var(--note-edge);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--note-handle),
+    var(--note-handle) 3px,
+    var(--note-edge) 3px,
+    var(--note-edge) 4px
+  );
+}
+
+html[data-theme] .mini-roll {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--grid-line) 0,
+    var(--grid-line) 1px,
+    var(--roll-background) 1px,
+    var(--roll-background) 25%
+  );
+}
+
+html[data-theme] .mini-roll i {
+  background: var(--primary);
 }
 
 @media (max-width: 480px) {

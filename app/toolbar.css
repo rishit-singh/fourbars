@@ -75,6 +75,78 @@
 
 .editor-workspace .toolbar-edit-actions {
   padding-left: 4px;
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+.editor-workspace .toolbar-edit-actions button {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.editor-workspace .editor-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-workspace .editor-title-row .title-input {
+  min-width: 0;
+}
+
+.editor-workspace .editor-title-edit {
+  flex: 0 0 auto;
+  padding: 8px;
+}
+
+.editor-workspace .roll-mode {
+  display: flex;
+  gap: 10px;
+  min-height: 36px;
+  align-items: center;
+}
+
+.editor-workspace .roll-mode label {
+  flex-direction: row;
+  align-items: center;
+  cursor: pointer;
+}
+
+.editor-workspace .roll-mode input {
+  width: auto;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.editor-workspace .roll-grid[data-mode="select"] {
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.editor-workspace .roll-marquee {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  border: 1px solid var(--primary);
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+.editor-workspace .piano-roll-editor > .roll-hint {
+  position: static;
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 11px;
+}
+
+.editor-workspace .roll-note-count {
+  flex-shrink: 0;
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 @media (max-width: 640px) {
@@ -88,6 +160,10 @@
 
   .editor-workspace .controls label {
     flex: 1 1 100px;
+  }
+
+  .editor-workspace .roll-mode label {
+    flex: 0 0 auto;
   }
 
   .editor-workspace .toolbar-edit-actions {

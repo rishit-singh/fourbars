@@ -1,0 +1,55 @@
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+.player-controls > .player {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+}
+
+.player-timeline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.player-timeline input[type="range"] {
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.player-timeline small {
+  flex: 0 0 auto;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .player-controls {
+    flex-wrap: wrap;
+  }
+
+  .player-timeline {
+    flex-basis: 100%;
+    width: 100%;
+  }
+}
