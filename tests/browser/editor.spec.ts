@@ -111,9 +111,24 @@ test("editor interactions, playback, failed save, publish and help (mock HTTP)",
   await page.mouse.up();
   await expect(first).toHaveAttribute("aria-label", "Note 62, beat 3, duration 1.5");
   await page.getByRole("button", { name: "Play melody", exact: true }).click();
-  await expect(page.getByRole("progressbar", { name: "Playback progress" })).toBeVisible();
+  const position = page.getByRole("slider", { name: "Playback position" });
+  await expect(position).toBeVisible();
+  await expect.poll(async () => Number(await position.inputValue())).toBeGreaterThan(0.1);
+  await page.getByRole("button", { name: "Pause playback" }).click();
+  await expect(page.getByRole("button", { name: "Resume playback" })).toBeVisible();
+  const pausedAt = await position.inputValue();
+  await page.waitForTimeout(250);
+  await expect(position).toHaveValue(pausedAt);
+  await position.fill("4");
+  await expect(position).toHaveValue("4");
+  await page.getByRole("button", { name: "Resume playback" }).click();
+  await expect.poll(async () => Number(await position.inputValue())).toBeGreaterThan(4.1);
+  await position.fill("2");
+  await expect(page.getByRole("button", { name: "Pause playback" })).toBeVisible();
+  await expect.poll(async () => Number(await position.inputValue())).toBeGreaterThan(2.1);
+  expect(Number(await position.inputValue())).toBeLessThan(4);
   await page.getByRole("button", { name: "Stop playback" }).click();
-  await expect(page.getByRole("progressbar")).toHaveCount(0);
+  await expect(position).toHaveCount(0);
   failSave = true;
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.locator(".error")).toHaveText("Save unavailable");
@@ -121,7 +136,7 @@ test("editor interactions, playback, failed save, publish and help (mock HTTP)",
   failSave = false;
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Saved");
-  await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
   expect(project.notes[0]).toMatchObject({ pitch: 62, start: 2, duration: 1.5 });
   await first.click();
   await page.keyboard.press("Delete");
@@ -133,7 +148,7 @@ test("editor interactions, playback, failed save, publish and help (mock HTTP)",
     "Note 36, beat 1, duration 0.5",
   );
   await page.getByRole("button", { name: "Play melody", exact: true }).click();
-  await expect(page.getByRole("progressbar")).toBeVisible();
+  await expect(position).toBeVisible();
   await page.getByRole("button", { name: "Stop playback" }).click();
   await page.getByRole("button", { name: /help/i }).click();
   await expect(page.getByRole("dialog")).toBeVisible();

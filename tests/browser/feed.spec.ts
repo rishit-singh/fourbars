@@ -37,12 +37,16 @@ test("anonymous feed uses keyset paging and one active player", async ({ page })
   await cards.nth(0).getByRole("button", { name: "Play Melody 1", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.getByRole("dialog").getByRole("button", { name: "Play melody", exact: true }).click();
-  await expect(page.getByRole("dialog").getByRole("progressbar")).toBeVisible();
+  await expect(
+    page.getByRole("dialog").getByRole("slider", { name: "Playback position" }),
+  ).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Stop playback" })).toHaveCount(0);
   await cards.nth(1).getByRole("button", { name: "Play Melody 2", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Play melody", exact: true }).click();
-  await expect(page.getByRole("dialog").getByRole("progressbar")).toBeVisible();
+  await expect(
+    page.getByRole("dialog").getByRole("slider", { name: "Playback position" }),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: "Stop playback" })).toHaveCount(1);
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Load more" }).click();
