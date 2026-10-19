@@ -41,8 +41,14 @@
   font-size: 12px;
 }
 
-.editor-workspace .transport label {
-  font-size: 12px;
+.editor-workspace .toolbar-playback {
+  flex: 1 1 360px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.editor-workspace .toolbar-playback > button {
+  flex-shrink: 0;
 }
 
 .editor-workspace .controls {
@@ -63,9 +69,13 @@
 }
 
 .editor-workspace .controls select,
-.editor-workspace .transport input {
+.editor-workspace .controls input[type="number"] {
   min-height: 36px;
   padding: 6px 8px;
+}
+
+.editor-workspace .controls input[type="number"] {
+  width: 96px;
 }
 
 .editor-workspace .controls select {
@@ -154,7 +164,7 @@
   .editor-workspace .transport button,
   .editor-workspace .toolbar-edit-actions button,
   .editor-workspace .controls select,
-  .editor-workspace .transport input {
+  .editor-workspace .controls input[type="number"] {
     min-height: 44px;
   }
 

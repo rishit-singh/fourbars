@@ -31,6 +31,11 @@ export const subscribePlayback = (fn: () => void) => {
 export const getPlayback = () => state;
 export const getServerPlayback = () => idle;
 export const getPlaybackElapsed = () => schedule?.position() ?? state.position ?? 0;
+export const getPlaybackComposition = (): {
+  notes: Note[];
+  bpm: number;
+  instrument: Instrument;
+} | null => composition ?? null;
 
 /** A bounded audio-clock scheduler: at most one future pass is queued, never restarted. */
 export function createPlaybackSchedule({
@@ -38,6 +43,7 @@ export function createPlaybackSchedule({
   duration,
   now,
   repeat,
+  initialPosition = 0,
   playCycle,
   finish,
   every,
@@ -46,6 +52,7 @@ export function createPlaybackSchedule({
   duration: number;
   now: () => number;
   repeat: boolean;
+  initialPosition?: number;
   playCycle: (at: number, skipBefore: number) => void;
   finish: () => void;
   every: (callback: () => void) => () => void;
@@ -91,7 +98,8 @@ export function createPlaybackSchedule({
       tick();
     },
     position() {
-      const elapsed = Math.max(0, now() - start);
+      // The audio start is slightly ahead of the clock; don't move backward after a seek.
+      const elapsed = Math.max(initialPosition, 0, now() - start);
       return elapsed >= (finalCycle + 1) * duration ? duration : elapsed % duration;
     },
   };
@@ -243,6 +251,7 @@ export async function playNotes(
       duration,
       now: () => Tone.immediate(),
       repeat: state.loop,
+      initialPosition: offset,
       playCycle: (at, skipBefore) => {
         if (token !== generation) return;
         for (const n of ordered) {

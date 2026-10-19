@@ -1,9 +1,17 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import {
+  getPlayback,
+  getPlaybackComposition,
+  getPlaybackElapsed,
+  getServerPlayback,
+  subscribePlayback,
+} from "@/lib/audio";
 import { createNotePreview } from "@/lib/note-preview";
 import { useEditor } from "@/store/editor";
-import { HIGH_PITCH, LOW_PITCH, TOTAL_BEATS } from "@/lib/types";
+import { HIGH_PITCH, LOW_PITCH, TOTAL_BEATS, type Instrument, type Note } from "@/lib/types";
 import { clamp, floorSnap, snap, DRUM_PITCHES } from "@/lib/music";
+import "@/app/piano-playback.css";
 const ROW = 24,
   BEAT = 64;
 const BLACK = new Set([1, 3, 6, 8, 10]);
@@ -20,6 +28,85 @@ type Drag = {
   previewPitch: number;
 };
 type Marquee = { x: number; y: number; endX: number; endY: number; base: string[] };
+function PlaybackOverlay({
+  notes,
+  bpm,
+  instrument,
+  pitches,
+  rowHeight,
+}: {
+  notes: Note[];
+  bpm: number;
+  instrument: Instrument;
+  pitches: number[];
+  rowHeight: number;
+}) {
+  const playback = useSyncExternalStore(subscribePlayback, getPlayback, getServerPlayback);
+  const composition = getPlaybackComposition();
+  const matches = useMemo(() => {
+    if (
+      !composition ||
+      composition.bpm !== bpm ||
+      composition.instrument !== instrument ||
+      composition.notes.length !== notes.length
+    )
+      return false;
+    // Validation clones the source array. Match actual note content, not array identity.
+    const byId = new Map(composition.notes.map((note) => [note.id, note]));
+    return notes.every((note) => {
+      const source = byId.get(note.id);
+      return (
+        source &&
+        source.pitch === note.pitch &&
+        source.start === note.start &&
+        source.duration === note.duration &&
+        source.velocity === note.velocity
+      );
+    });
+  }, [composition, notes, bpm, instrument]);
+  const [sample, setSample] = useState(() => ({ playback, elapsed: getPlaybackElapsed() }));
+  useEffect(() => {
+    if (!matches || playback.status !== "playing") return;
+    let frame: number;
+    const tick = () => {
+      setSample({ playback, elapsed: getPlaybackElapsed() });
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [matches, playback]);
+  if (!matches || (playback.status !== "playing" && playback.status !== "paused")) return null;
+  // The scheduler supplies loop-relative audio time, including paused seeks.
+  const elapsed = sample.playback === playback ? sample.elapsed : getPlaybackElapsed();
+  const beat = clamp(elapsed / (60 / bpm), 0, TOTAL_BEATS);
+  return (
+    <div className="roll-playback-overlay" aria-hidden="true">
+      {playback.status === "playing" &&
+        notes.map((note) => {
+          if (beat < note.start || beat >= note.start + note.duration) return null;
+          const row = pitches.indexOf(note.pitch);
+          if (row < 0) return null;
+          return (
+            <div
+              key={note.id}
+              className="roll-sounding-note"
+              style={{
+                left: `${(note.start / TOTAL_BEATS) * 100}%`,
+                top: row * rowHeight + 3,
+                width: `max(10px, calc(${(note.duration / TOTAL_BEATS) * 100}% - 2px))`,
+                height: rowHeight - 6,
+              }}
+            />
+          );
+        })}
+      <div
+        className="roll-playhead"
+        data-paused={playback.status === "paused"}
+        style={{ left: `${(beat / TOTAL_BEATS) * 100}%` }}
+      />
+    </div>
+  );
+}
 export function PianoRoll({ mode = "draw" }: { mode?: "draw" | "select" }) {
   const notes = useEditor((s) => s.notes),
     add = useEditor((s) => s.addNote),
@@ -28,10 +115,12 @@ export function PianoRoll({ mode = "draw" }: { mode?: "draw" | "select" }) {
   const step = useEditor((s) => s.quantization),
     selection = useEditor((s) => s.selection),
     select = useEditor((s) => s.select),
-    instrument = useEditor((s) => s.instrument);
+    instrument = useEditor((s) => s.instrument),
+    bpm = useEditor((s) => s.bpm);
   const drag = useRef<Drag | null>(null);
   const grid = useRef<HTMLDivElement>(null);
   const [group, setGroup] = useState<string[]>([]);
+  const [selectedKey, setSelectedKey] = useState<number | null>(null);
   const [marquee, setMarquee] = useState<Marquee | null>(null);
   const marqueeRef = useRef<Marquee | null>(null);
   const selected = new Set(
@@ -39,6 +128,9 @@ export function PianoRoll({ mode = "draw" }: { mode?: "draw" | "select" }) {
   );
   const preview = useRef<ReturnType<typeof createNotePreview> | null>(null);
   useEffect(() => () => preview.current?.dispose(), []);
+  useEffect(() => {
+    preview.current?.stop();
+  }, [instrument]);
   const audition = (pitch: number) => {
     preview.current ??= createNotePreview();
     void preview.current.play(pitch, instrument);
@@ -53,7 +145,7 @@ export function PianoRoll({ mode = "draw" }: { mode?: "draw" | "select" }) {
     : Array.from({ length: HIGH_PITCH - LOW_PITCH + 1 }, (_, i) => HIGH_PITCH - i);
   const rowHeight = drums ? 96 : ROW;
   return (
-    <div className="piano-roll-editor">
+    <div className="piano-roll-editor" onPointerLeave={() => preview.current?.stop()}>
       <div
         className="roll-scroll"
         tabIndex={0}
@@ -91,15 +183,29 @@ export function PianoRoll({ mode = "draw" }: { mode?: "draw" | "select" }) {
         >
           <div className="key-column">
             {pitches.map((p, i) => (
-              <div
+              <button
+                type="button"
                 className={`key ${!drums && BLACK.has(p % 12) ? "black" : ""}`}
                 key={p}
                 style={{ top: i * rowHeight, height: rowHeight }}
+                aria-label={`Audition ${drums ? { 36: "Kick", 38: "Snare", 42: "Hat" }[p] : `${NAMES[p % 12]}${Math.floor(p / 12) - 1}`}`}
+                aria-pressed={selectedKey === p}
+                title="Hover or click to audition"
+                onPointerEnter={(e) => {
+                  if (e.pointerType !== "touch") audition(p);
+                }}
+                onPointerLeave={() => preview.current?.stop()}
+                onPointerCancel={() => preview.current?.stop()}
+                onBlur={() => preview.current?.stop()}
+                onClick={() => {
+                  setSelectedKey(p);
+                  audition(p);
+                }}
               >
                 {drums
                   ? { 36: "Kick", 38: "Snare", 42: "Hat" }[p]
                   : `${NAMES[p % 12]}${Math.floor(p / 12) - 1}`}
-              </div>
+              </button>
             ))}
           </div>
           <div
@@ -322,6 +428,13 @@ export function PianoRoll({ mode = "draw" }: { mode?: "draw" | "select" }) {
                 }}
               />
             )}
+            <PlaybackOverlay
+              notes={notes}
+              bpm={bpm}
+              instrument={instrument}
+              pitches={pitches}
+              rowHeight={rowHeight}
+            />
           </div>
         </div>
       </div>

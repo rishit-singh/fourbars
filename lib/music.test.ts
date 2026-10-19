@@ -3,7 +3,12 @@ import { floorSnap, normalizedNote, secondsForBeats, snap } from "./music";
 import {
   createPlaybackSchedule,
   getPlayback,
+  getPlaybackComposition,
+  getPlaybackElapsed,
+  pauseAudio,
   playNotes,
+  resumeAudio,
+  seekAudio,
   setPlaybackLoop,
   stopAudio,
 } from "./audio";
@@ -52,6 +57,39 @@ describe("musical beat transforms", () => {
 });
 
 describe("audio-clock loop scheduling", () => {
+  it("finishes an already queued pass on Loop off and holds the final position through release", () => {
+    let time = 0;
+    let tick = () => {};
+    const play = vi.fn();
+    const finish = vi.fn();
+    const schedule = createPlaybackSchedule({
+      start: 0.18,
+      duration: 8,
+      repeat: true,
+      now: () => time,
+      playCycle: play,
+      finish,
+      every: (callback) => {
+        tick = callback;
+        return () => {};
+      },
+    });
+    time = 8;
+    tick();
+    schedule.setLoop(false);
+    expect(play.mock.calls.map(([at]) => at)).toEqual([0.18, 8.18]);
+    time = 8.18;
+    expect(schedule.position()).toBeCloseTo(0);
+    time = 16.3;
+    tick();
+    expect(schedule.position()).toBe(8);
+    expect(finish).not.toHaveBeenCalled();
+    time = 16.6;
+    tick();
+    expect(finish).toHaveBeenCalledOnce();
+    expect(play).toHaveBeenCalledTimes(2);
+  });
+
   it("keeps exact boundaries despite callback jitter and ignores callbacks after cancellation", () => {
     let time = 0;
     let tick = () => {};
@@ -164,6 +202,46 @@ describe("global playback lifecycle", () => {
   afterEach(() => {
     stopAudio();
     vi.useRealTimers();
+  });
+
+  it("preserves the session composition and exact paused seek position across loop changes", async () => {
+    expect(getPlaybackComposition()).toBeNull();
+    await playNotes([note], 120, "piano", "editor", true);
+    const composition = getPlaybackComposition();
+    expect(composition).toEqual({ notes: [note], bpm: 120, instrument: "piano" });
+    vi.advanceTimersByTime(3000);
+    pauseAudio("editor");
+    expect(getPlaybackElapsed()).toBeCloseTo(2.82);
+    expect(getPlaybackComposition()).toBe(composition);
+    await seekAudio("editor", 5);
+    setPlaybackLoop("editor", false);
+    vi.advanceTimersByTime(1000);
+    expect(getPlayback()).toMatchObject({ status: "paused", loop: false, position: 5 });
+    expect(getPlaybackElapsed()).toBe(5);
+    expect(getPlaybackComposition()).toBe(composition);
+    await resumeAudio("editor");
+    expect(getPlaybackElapsed()).toBe(5);
+    vi.advanceTimersByTime(100);
+    expect(getPlaybackElapsed()).toBe(5);
+    vi.advanceTimersByTime(900);
+    expect(getPlaybackElapsed()).toBeCloseTo(5.82);
+    vi.advanceTimersByTime(3000);
+    expect(getPlayback().status).toBe("idle");
+    expect(getPlaybackComposition()).toBeNull();
+  });
+
+  it("keeps seek-to-end paused and clears the composition only for the owning Stop", async () => {
+    await playNotes([note], 120, "piano", "editor", true);
+    await seekAudio("editor", 100);
+    expect(getPlayback()).toMatchObject({ status: "paused", position: 8 });
+    expect(getPlaybackElapsed()).toBe(8);
+    setPlaybackLoop("editor", false);
+    stopAudio("other");
+    expect(getPlaybackComposition()).not.toBeNull();
+    expect(getPlaybackElapsed()).toBe(8);
+    stopAudio("editor");
+    expect(getPlaybackComposition()).toBeNull();
+    expect(getPlaybackElapsed()).toBe(0);
   });
 
   it("loops beyond 100 passes with one pending scheduler and no voice restarts", async () => {

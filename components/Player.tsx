@@ -21,17 +21,27 @@ export function Player({
   bpm,
   instrument,
   loop = false,
+  owner,
 }: {
   notes: Note[];
   bpm: number;
   instrument: Instrument;
   loop?: boolean;
+  owner?: string;
 }) {
-  const id = useId();
+  const generatedId = useId();
+  const id = owner ?? generatedId;
   const playback = useSyncExternalStore(subscribePlayback, getPlayback, getServerPlayback);
   const active = playback.owner === id;
   const [elapsed, setElapsed] = useState(0);
-  const position = !active ? 0 : playback.status === "playing" ? elapsed : (playback.position ?? 0);
+  const [cue, setCue] = useState({ position: 0, bpm, instrument });
+  const available = notes.length > 0 && Number.isFinite(bpm) && bpm >= 40 && bpm <= 240;
+  const duration = active ? playback.duration : available ? (16 * 60) / bpm : 0;
+  const cuePosition = cue.bpm === bpm && cue.instrument === instrument ? cue.position : 0;
+  const position = Math.min(
+    duration,
+    !active ? cuePosition : playback.status === "playing" ? elapsed : (playback.position ?? 0),
+  );
   const label = !active
     ? "Play melody"
     : playback.status === "loading"
@@ -55,7 +65,8 @@ export function Player({
     <div className="player-controls">
       <button
         className="player"
-        disabled={!active && !notes.length}
+        type="button"
+        disabled={!active && !available}
         aria-label={label}
         title={label}
         onClick={async () => {
@@ -68,8 +79,10 @@ export function Player({
               setElapsed(playback.position ?? 0);
               await resumeAudio(id);
             } else {
-              setElapsed(0);
-              await playNotes(notes, bpm, instrument, id, loop);
+              const offset = position >= duration ? 0 : position;
+              setCue({ position: 0, bpm, instrument });
+              setElapsed(offset);
+              await playNotes(notes, bpm, instrument, id, loop, offset);
             }
           } catch (e) {
             toast.error(e instanceof Error ? e.message : "Audio unavailable. Try Play again.");
@@ -88,41 +101,48 @@ export function Player({
           <Play size={17} />
         )}
       </button>
-      {active && (
-        <button
-          className="player"
-          aria-label="Stop playback"
-          title="Stop playback"
-          onClick={() => stopAudio(id)}
-        >
-          <Square size={17} />
-        </button>
-      )}
-      {active && (
-        <div className="player-timeline">
-          <input
-            type="range"
-            aria-label="Playback position"
-            aria-valuetext={`${position.toFixed(1)} of ${playback.duration.toFixed(1)} seconds`}
-            min={0}
-            max={playback.duration}
-            step={0.01}
-            value={position}
-            onChange={async (event) => {
-              const value = Number(event.target.value);
-              setElapsed(value);
-              try {
-                await seekAudio(id, value);
-              } catch (e) {
-                toast.error(e instanceof Error ? e.message : "Audio unavailable. Try Play again.");
-              }
-            }}
-          />
-          <small>
-            {position.toFixed(1)} / {playback.duration.toFixed(1)}s
-          </small>
-        </div>
-      )}
+      <button
+        type="button"
+        className="player"
+        aria-label="Stop playback"
+        title="Stop playback"
+        disabled={!active && position === 0}
+        onClick={() => {
+          stopAudio(id);
+          setCue({ position: 0, bpm, instrument });
+          setElapsed(0);
+        }}
+      >
+        <Square size={17} />
+      </button>
+      <div className="player-timeline">
+        <input
+          type="range"
+          aria-label="Playback position"
+          aria-valuetext={`${position.toFixed(1)} of ${duration.toFixed(1)} seconds`}
+          disabled={!active && !available}
+          min={0}
+          max={duration}
+          step={0.01}
+          value={position}
+          onChange={async (event) => {
+            const value = Number(event.target.value);
+            if (!active) {
+              setCue({ position: value, bpm, instrument });
+              return;
+            }
+            setElapsed(value);
+            try {
+              await seekAudio(id, value);
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : "Audio unavailable. Try Play again.");
+            }
+          }}
+        />
+        <small>
+          {position.toFixed(1)} / {duration.toFixed(1)}s
+        </small>
+      </div>
     </div>
   );
 }

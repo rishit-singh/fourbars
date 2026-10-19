@@ -291,26 +291,13 @@ export function Editor({ id }: { id: string }) {
             type="button"
             className={loop ? "primary" : "outline"}
             aria-pressed={loop}
+            disabled={!state.notes.length}
             title="Repeat four bars. Turning Loop off finishes the queued pass; Stop ends playback immediately."
             onClick={() => setLoop(!loop)}
           >
             <Repeat size={16} /> Loop
           </button>
         </div>
-        <label>
-          Tempo{" "}
-          <input
-            aria-label="Tempo"
-            type="number"
-            min={40}
-            max={240}
-            disabled={busy}
-            value={state.bpm || ""}
-            onChange={(e) => state.setField({ bpm: Number(e.target.value) })}
-            onKeyDown={saveOnEnter}
-          />{" "}
-          BPM
-        </label>
         <span>4 bars · 4/4 · 16 beats</span>
       </div>
       <fieldset disabled={busy} className="editor-fields">
@@ -337,6 +324,18 @@ export function Editor({ id }: { id: string }) {
               Select
             </label>
           </div>
+          <label>
+            Tempo · BPM
+            <input
+              aria-label="Tempo"
+              type="number"
+              min={40}
+              max={240}
+              value={state.bpm || ""}
+              onChange={(e) => state.setField({ bpm: Number(e.target.value) })}
+              onKeyDown={saveOnEnter}
+            />
+          </label>
           <label>
             Preset
             <select

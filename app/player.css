@@ -36,11 +36,17 @@
 }
 
 .player-timeline small {
-  flex: 0 0 auto;
+  flex: 0 0 13ch;
+  text-align: right;
   color: var(--muted-foreground);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.player-timeline input[type="range"]:disabled {
+  cursor: default;
+  opacity: 0.45;
 }
 
 @media (max-width: 640px) {

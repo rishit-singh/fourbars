@@ -40,6 +40,9 @@ test("anonymous feed uses keyset paging and one active player", async ({ page })
   await expect(
     page.getByRole("dialog").getByRole("slider", { name: "Playback position" }),
   ).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const seekWidth = (await page.getByRole("dialog").getByRole("slider").boundingBox())!.width;
+  expect(seekWidth).toBeGreaterThan(220);
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Stop playback" })).toHaveCount(0);
   await cards.nth(1).getByRole("button", { name: "Play Melody 2", exact: true }).click();
@@ -55,7 +58,8 @@ test("anonymous feed uses keyset paging and one active player", async ({ page })
   expect(queries.some((url) => url.searchParams.get("or")?.includes("id.lt."))).toBe(true);
   await cards.nth(0).getByRole("link", { name: "Open", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Melody 1", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Stop playback" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Stop playback" })).toBeDisabled();
+  await expect(page.getByRole("slider", { name: "Playback position" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Edit draft" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /Sign in to like/ })).toBeVisible();
 });

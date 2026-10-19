@@ -96,6 +96,10 @@ test("editor interactions, playback, failed save, publish and help (mock HTTP)",
     "Test sketch",
   );
   const grid = page.locator(".roll-grid");
+  await expect(page.getByRole("slider", { name: "Playback position" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Stop playback" })).toBeDisabled();
+  await page.locator(".key").first().hover();
+  await expect(page.locator(".note")).toHaveCount(0);
   const beatWidth = (await grid.boundingBox())!.width / 16;
   const rollWidth = await page
     .locator(".roll")
@@ -120,15 +124,38 @@ test("editor interactions, playback, failed save, publish and help (mock HTTP)",
   await page.mouse.move(handle.x + 3 + beatWidth, handle.y + 5, { steps: 4 });
   await page.mouse.up();
   await expect(first).toHaveAttribute("aria-label", "Note 62, beat 3, duration 1.5");
+  const idleTrack = (await page.getByRole("slider", { name: "Playback position" }).boundingBox())!;
   await page.getByRole("button", { name: "Play melody", exact: true }).click();
   const position = page.getByRole("slider", { name: "Playback position" });
   await expect(position).toBeVisible();
+  const playingTrack = (await position.boundingBox())!;
+  expect(Math.abs(playingTrack.width - idleTrack.width)).toBeLessThan(1);
+  expect(Math.abs(playingTrack.x - idleTrack.x)).toBeLessThan(1);
+  await expect(page.getByRole("button", { name: "Loop", exact: true })).toBeEnabled();
+  await page.getByRole("button", { name: "Loop", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Loop", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await page.getByRole("button", { name: "Loop", exact: true }).click();
   await expect.poll(async () => Number(await position.inputValue())).toBeGreaterThan(0.1);
   await page.getByRole("button", { name: "Pause playback" }).click();
   await expect(page.getByRole("button", { name: "Resume playback" })).toBeVisible();
   const pausedAt = await position.inputValue();
   await page.waitForTimeout(250);
   await expect(position).toHaveValue(pausedAt);
+  await position.fill("1.25");
+  await expect(page.locator(".roll-playhead")).toHaveAttribute("data-paused", "true");
+  await expect
+    .poll(() =>
+      page
+        .locator(".roll-playhead")
+        .evaluate((element) => parseFloat((element as HTMLElement).style.left)),
+    )
+    .toBeCloseTo(15.625, 2);
+  await page.getByRole("button", { name: "Resume playback" }).click();
+  await expect(page.locator(".roll-sounding-note")).toBeVisible();
+  await page.getByRole("button", { name: "Pause playback" }).click();
   await position.fill("4");
   await expect(position).toHaveValue("4");
   await page.getByRole("button", { name: "Resume playback" }).click();
@@ -138,7 +165,9 @@ test("editor interactions, playback, failed save, publish and help (mock HTTP)",
   await expect.poll(async () => Number(await position.inputValue())).toBeGreaterThan(2.1);
   expect(Number(await position.inputValue())).toBeLessThan(4);
   await page.getByRole("button", { name: "Stop playback" }).click();
-  await expect(position).toHaveCount(0);
+  await expect(position).toBeVisible();
+  await expect(position).toHaveValue("0");
+  await expect(page.getByRole("button", { name: "Stop playback" })).toBeDisabled();
   await page.getByRole("combobox", { name: "Preset", exact: true }).selectOption("bass");
   await expect(page.getByRole("combobox", { name: "Preset", exact: true })).toHaveValue("bass");
   failSave = true;
