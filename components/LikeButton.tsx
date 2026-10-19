@@ -38,7 +38,7 @@ export function LikeButton({
           aria-label={`Sign in to like ${project.title}; ${count} likes`}
         >
           <Heart data-icon="inline-start" /> <span>{count}</span>
-          <span>Like</span>
+          <span>Sign in to like</span>
         </Link>
       </Button>
     );

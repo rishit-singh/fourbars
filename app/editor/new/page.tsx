@@ -21,32 +21,29 @@ export default function NewProject() {
         if (active) router.replace(`/editor/${id}`);
       })
       .catch((error) => {
-        if (active) setError(errorMessage(error));
+        if (!active) return;
+        const message = errorMessage(error);
+        if (/sign in/i.test(message)) {
+          router.replace("/login?next=%2Feditor%2Fnew");
+        } else {
+          setError(message);
+        }
       });
     return () => {
       active = false;
     };
   }, [router, attempt]);
-  if (!error) return <p role="status">Creating your private draft…</p>;
+  if (!error) return <p role="status">Opening editor…</p>;
   return (
     <ActionError
       title="Could not create a melody"
       message={error}
-      onRetry={
-        /sign in/i.test(error)
-          ? undefined
-          : () => {
-              creation.current = null;
-              setError("");
-              setAttempt((value) => value + 1);
-            }
-      }
+      onRetry={() => {
+        creation.current = null;
+        setError("");
+        setAttempt((value) => value + 1);
+      }}
     >
-      {/sign in/i.test(error) && (
-        <Button asChild>
-          <Link href="/login?next=%2Feditor%2Fnew">Sign in to create</Link>
-        </Button>
-      )}
       <Button variant="outline" asChild>
         <Link href="/">Back to melodies</Link>
       </Button>

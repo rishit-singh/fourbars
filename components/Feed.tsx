@@ -29,7 +29,7 @@ const statusLabels = {
 };
 
 export function Feed() {
-  const [mine, setMine] = useState(false);
+  const [mineRequested, setMine] = useState(false);
   const [filter, setFilter] = useState<ProjectFilter>("all");
   const [items, setItems] = useState<Project[]>([]);
   const [cursor, setCursor] = useState<Cursor>();
@@ -37,9 +37,12 @@ export function Feed() {
   const [loading, setLoading] = useState(true);
   const [retry, setRetry] = useState(0);
   const [userId, setUserId] = useState<string>();
+  const [authLoading, setAuthLoading] = useState(true);
+  const mine = !authLoading && !!userId && mineRequested;
   const [createOpen, setCreateOpen] = useState(false);
   const [selected, setSelected] = useState<Project | null>(null);
   const request = useRef(0);
+  const authUser = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("view") === "mine") setMine(true);
@@ -52,14 +55,27 @@ export function Feed() {
     try {
       const {
         data: { subscription },
-      } = getSupabase().auth.onAuthStateChange((_, session) => setUserId(session?.user.id));
+      } = getSupabase().auth.onAuthStateChange((_, session) => {
+        setUserId(session?.user.id);
+        setAuthLoading(false);
+        if (authUser.current !== session?.user.id) {
+          authUser.current = session?.user.id;
+          request.current += 1;
+          setItems([]);
+          setSelected(null);
+          setLoading(true);
+        }
+        if (!session) setMine(false);
+      });
       return () => subscription.unsubscribe();
     } catch {
+      setAuthLoading(false);
       /* The data request below displays missing configuration. */
     }
   }, []);
 
   useEffect(() => {
+    if (authLoading) return;
     const token = ++request.current;
     setLoading(true);
     setError("");
@@ -83,7 +99,7 @@ export function Feed() {
     return () => {
       request.current = token + 1;
     };
-  }, [mine, filter, retry, userId]);
+  }, [mine, filter, retry, userId, authLoading]);
 
   async function loadMore() {
     if (!cursor || loading) return;
@@ -114,7 +130,7 @@ export function Feed() {
           <h1>Melodies</h1>
           <p>Little ideas, worth sharing.</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
+        <Button disabled={authLoading} onClick={() => setCreateOpen(true)}>
           <Plus data-icon="inline-start" />
           Create
         </Button>
@@ -128,14 +144,16 @@ export function Feed() {
         >
           Community
         </button>
-        <button
-          role="tab"
-          aria-selected={mine}
-          className={mine ? "active" : ""}
-          onClick={() => setMine(true)}
-        >
-          My Projects
-        </button>
+        {!authLoading && userId && (
+          <button
+            role="tab"
+            aria-selected={mine}
+            className={mine ? "active" : ""}
+            onClick={() => setMine(true)}
+          >
+            My Projects
+          </button>
+        )}
       </div>
       {mine && (
         <div className="project-filters" role="group" aria-label="Filter your projects">
