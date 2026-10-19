@@ -101,6 +101,13 @@ Set both `NEXT_PUBLIC_` values **at build time** (local `.env.local`, or Cloudfl
 
 ## Remaining work / tradeoffs
 
+### Follow-up roadmap
+
+- Measure Supabase request counts before adding client query caching and request deduplication. Scope private cache entries by user and invalidate on mutations/sign-out; separate personalized like state before considering shared CDN caching.
+- Preserve feed scroll position and playback when navigating between a melody overlay and its shareable page.
+- Add broader touch-device checks, keyboard-accessible group editing, and reduced-motion-aware transitions before introducing an animation library.
+- Review the integrated playback lifecycle, editing bounds, authentication gates, and deployment permissions before expanding features.
+
 - **Release verification remaining:** verify signup/login/refresh, save/reopen, anonymous playback, A-vs-B permissions, and republishing against the deployed backend. Supabase URL/key, database schema, and production auth redirects are configured; the live anonymous feed and draft-read denial have been verified.
 - No WAV/MP3/Storage integration, local recovery, undo/redo, optimistic concurrency, multitrack, samples, comments, or following.
 - Explicit save only. Link navigation and page unload warn about dirty state. Same-document Back/Forward cancellation uses the Navigation API; browsers without it may not warn on SPA history navigation.

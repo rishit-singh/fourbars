@@ -93,20 +93,21 @@ test("editor interactions, playback, failed save, publish and help (mock HTTP)",
   await page.goto(`/editor/${id}`);
   await expect(page.getByLabel("Melody title")).toHaveValue("Test sketch");
   const grid = page.locator(".roll-grid");
+  const beatWidth = (await grid.boundingBox())!.width / 16;
   // Clicking just before the subdivision boundary must stay in that subdivision.
-  await grid.click({ position: { x: 30, y: 11 * 24 + 10 } });
+  await grid.click({ position: { x: beatWidth * 0.47, y: 11 * 24 + 10 } });
   const first = page.locator(".note").first();
   await expect(first).toHaveAttribute("aria-label", "Note 60, beat 1, duration 0.5");
   const box = (await first.boundingBox())!;
   await page.mouse.move(box.x + 8, box.y + 8);
   await page.mouse.down();
-  await page.mouse.move(box.x + 8 + 128, box.y + 8 - 48, { steps: 5 });
+  await page.mouse.move(box.x + 8 + beatWidth * 2, box.y + 8 - 48, { steps: 5 });
   await page.mouse.up();
   await expect(first).toHaveAttribute("aria-label", "Note 62, beat 3, duration 0.5");
   const handle = (await first.locator(".note-handle").boundingBox())!;
   await page.mouse.move(handle.x + 3, handle.y + 5);
   await page.mouse.down();
-  await page.mouse.move(handle.x + 3 + 64, handle.y + 5, { steps: 4 });
+  await page.mouse.move(handle.x + 3 + beatWidth, handle.y + 5, { steps: 4 });
   await page.mouse.up();
   await expect(first).toHaveAttribute("aria-label", "Note 62, beat 3, duration 1.5");
   await page.getByRole("button", { name: "Play melody", exact: true }).click();

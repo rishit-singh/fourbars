@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ArrowLeft, Copy, Download, Pencil, EyeOff } from "lucide-react";
 import { getPublished, unpublishProject } from "@/lib/projects";
 import { getSupabase } from "@/lib/supabase";
 import { errorMessage } from "@/lib/errors";
@@ -69,7 +70,7 @@ export function Melody({ id }: { id: string }) {
   return (
     <section className="detail">
       <Link href="/" className="back-link">
-        ← Melodies
+        <ArrowLeft size={16} aria-hidden="true" /> Melodies
       </Link>
       <span className="eyebrow">FOUR BARS, ONE IDEA</span>
       <h1>{p.title}</h1>
@@ -102,7 +103,7 @@ export function Melody({ id }: { id: string }) {
         {userId === p.user_id && (
           <>
             <Link href={`/editor/${p.id}`} className="primary">
-              Edit draft
+              <Pencil size={16} aria-hidden="true" /> Edit draft
             </Link>
             <button
               className="outline"
@@ -112,7 +113,7 @@ export function Melody({ id }: { id: string }) {
                 )
               }
             >
-              Export MIDI
+              <Download size={16} aria-hidden="true" /> Export MIDI
             </button>
             <button
               className="outline"
@@ -121,7 +122,7 @@ export function Melody({ id }: { id: string }) {
                 setConfirmUnpublish(true);
               }}
             >
-              Unpublish
+              <EyeOff size={16} aria-hidden="true" /> Unpublish
             </button>
           </>
         )}
@@ -136,7 +137,7 @@ export function Melody({ id }: { id: string }) {
             }
           }}
         >
-          Copy link
+          <Copy size={16} aria-hidden="true" /> Copy link
         </button>
       </div>
       <ConfirmDialog
