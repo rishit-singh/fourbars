@@ -1,6 +1,7 @@
 "use client";
 import type { Instrument, Note } from "./types";
 import { compositionSchema } from "./validation";
+import { createLivePlaybackSchedule } from "./live-schedule";
 
 type Playback = {
   owner: string | null;
@@ -16,8 +17,9 @@ let state = idle;
 const listeners = new Set<() => void>();
 let generation = 0;
 let dispose: (() => void) | undefined;
-let schedule: ReturnType<typeof createPlaybackSchedule> | undefined;
+let schedule: ReturnType<typeof createLivePlaybackSchedule> | undefined;
 let composition: { notes: Note[]; bpm: number; instrument: Instrument } | undefined;
+let compositionRevision = -Infinity;
 function emit(value: Playback) {
   state = value;
   listeners.forEach((fn) => fn());
@@ -36,6 +38,24 @@ export const getPlaybackComposition = (): {
   bpm: number;
   instrument: Instrument;
 } | null => composition ?? null;
+
+/**
+ * Publish an already-normalized immutable editor snapshot in O(1). Revisions
+ * must increase within an owner's playback session. BPM/instrument stay captured.
+ * The scheduler reconciles on its next tick; already submitted attacks within
+ * 200 ms of the raw audio clock and sounding notes retain their original sound.
+ */
+export function updatePlaybackNotes(owner: string, notes: Note[], revision: number): void {
+  if (
+    state.owner !== owner ||
+    !composition ||
+    !Number.isFinite(revision) ||
+    revision <= compositionRevision
+  )
+    return;
+  compositionRevision = revision;
+  composition = { ...composition, notes };
+}
 
 /** A bounded audio-clock scheduler: at most one future pass is queued, never restarted. */
 export function createPlaybackSchedule({
@@ -119,6 +139,7 @@ export function stopAudio(owner?: string) {
   dispose = undefined;
   schedule = undefined;
   composition = undefined;
+  compositionRevision = -Infinity;
   cleanup?.();
   emit(idle);
 }
@@ -127,8 +148,10 @@ export function pauseAudio(owner: string) {
   if (state.owner !== owner || state.status !== "playing") return;
   const paused = { ...state, status: "paused" as const, position: getPlaybackElapsed() };
   const saved = composition;
+  const savedRevision = compositionRevision;
   stopAudio(owner);
   composition = saved;
+  compositionRevision = savedRevision;
   emit(paused);
 }
 
@@ -136,7 +159,15 @@ export async function resumeAudio(owner: string) {
   if (state.owner !== owner || state.status !== "paused" || !composition) return;
   const { notes, bpm, instrument } = composition;
   const position = (state.position ?? 0) >= state.duration ? 0 : state.position;
-  await playNotes(notes, bpm, instrument, owner, state.loop, position);
+  await startPlayback(
+    notes,
+    bpm,
+    instrument,
+    owner,
+    state.loop,
+    position ?? 0,
+    compositionRevision,
+  );
 }
 
 export async function seekAudio(owner: string, position: number) {
@@ -144,7 +175,7 @@ export async function seekAudio(owner: string, position: number) {
   position = Math.max(0, Math.min(state.duration, position));
   if (state.status === "loading") {
     const { notes, bpm, instrument } = composition;
-    await playNotes(notes, bpm, instrument, owner, state.loop, position);
+    await startPlayback(notes, bpm, instrument, owner, state.loop, position, compositionRevision);
     return;
   }
   const playing = state.status === "playing";
@@ -164,14 +195,28 @@ export async function playNotes(
 ) {
   notes = compositionSchema.parse({ notes, bpm, instrument, key: "C" }).notes;
   if (!notes.length) throw new Error("Add a note first");
+  await startPlayback(notes, bpm, instrument, owner, loop, offset);
+}
+
+/** Resume/seek may start an empty edited composition while keeping transport alive. */
+async function startPlayback(
+  notes: Note[],
+  bpm: number,
+  instrument: Instrument,
+  owner: string,
+  loop: boolean,
+  offset: number,
+  revision = -Infinity,
+) {
   stopAudio();
   const token = generation;
   const duration = (16 * 60) / bpm;
   offset = Number.isFinite(offset) ? Math.max(0, Math.min(duration, offset)) : 0;
   composition = { notes, bpm, instrument };
+  compositionRevision = revision;
   emit({ owner, status: "loading", started: 0, duration, loop, position: offset });
   const resources: { dispose: () => unknown }[] = [];
-  let ownSchedule: ReturnType<typeof createPlaybackSchedule> | undefined;
+  let ownSchedule: ReturnType<typeof createLivePlaybackSchedule> | undefined;
   const cleanup = () => {
     ownSchedule?.cancel();
     resources
@@ -235,34 +280,17 @@ export async function playNotes(
           n.velocity / 127,
         );
     }
-    const seen = new Set<string>();
-    const ordered = [...notes]
-      .sort((a, b) => a.start - b.start)
-      .filter((n) => {
-        if (instrument !== "drums") return true;
-        // Monophonic drum voices cannot retrigger at identical timestamps.
-        const key = `${n.pitch}:${n.start}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-    ownSchedule = createPlaybackSchedule({
+    ownSchedule = createLivePlaybackSchedule({
       start,
       duration,
+      bpm,
+      drums: instrument === "drums",
       now: () => Tone.immediate(),
       repeat: state.loop,
       initialPosition: offset,
-      playCycle: (at, skipBefore) => {
-        if (token !== generation) return;
-        for (const n of ordered) {
-          const time = at + (n.start * 60) / bpm;
-          const boundary = Math.max(skipBefore, audibleStart);
-          if (time >= boundary) trigger(n, time);
-          else if (offset > 0 && at === start && instrument !== "drums") {
-            const remaining = time + (n.duration * 60) / bpm - boundary;
-            if (remaining > 0) trigger({ ...n, duration: (remaining * bpm) / 60 }, boundary);
-          }
-        }
+      getSnapshot: () => ({ notes: composition?.notes ?? [], revision: compositionRevision }),
+      trigger: (note, at) => {
+        if (token === generation) trigger(note, at);
       },
       finish: () => {
         if (token === generation) stopAudio(owner);
@@ -313,6 +341,7 @@ export async function playNotes(
       dispose = undefined;
       schedule = undefined;
       composition = undefined;
+      compositionRevision = -Infinity;
       emit(idle);
       throw e;
     }

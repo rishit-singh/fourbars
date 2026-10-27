@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { getProject, updateProject, deleteProject, publishProject } from "@/lib/projects";
@@ -10,13 +10,14 @@ import { useEditor } from "@/store/editor";
 import type { Quantization } from "@/lib/types";
 import { PianoRoll } from "./PianoRoll";
 import { Player } from "./Player";
-import { exportMidi } from "@/lib/audio";
+import { exportMidi, updatePlaybackNotes } from "@/lib/audio";
 import { Download, Save, Upload, Trash2, ArrowLeft, Repeat, Eraser, Pencil } from "lucide-react";
 import { EditorHelp } from "./editor/EditorHelp";
 import "@/app/toolbar.css";
 
 export function Editor({ id }: { id: string }) {
   const router = useRouter();
+  const playbackOwner = useId();
   const state = useEditor();
   const lifecycle = useRef(0);
   const inFlight = useRef(false);
@@ -29,6 +30,15 @@ export function Editor({ id }: { id: string }) {
   const titleInput = useRef<HTMLInputElement>(null);
   const published = state.publicationStatus !== "draft";
   const unpublishedChanges = state.publicationStatus === "changed" || state.dirty;
+  useEffect(
+    () =>
+      useEditor.subscribe((next, previous) => {
+        // Deliver edits synchronously, including while audio is loading or paused.
+        if (next.notes !== previous.notes)
+          updatePlaybackNotes(playbackOwner, next.notes, next.revision);
+      }),
+    [playbackOwner],
+  );
   useEffect(() => {
     let alive = true;
     const generation = ++lifecycle.current;
@@ -286,7 +296,13 @@ export function Editor({ id }: { id: string }) {
       </div>
       <div className="transport" role="group" aria-label="Playback controls">
         <div className="toolbar-playback">
-          <Player notes={state.notes} bpm={state.bpm} instrument={state.instrument} loop={loop} />
+          <Player
+            owner={playbackOwner}
+            notes={state.notes}
+            bpm={state.bpm}
+            instrument={state.instrument}
+            loop={loop}
+          />
           <button
             type="button"
             className={loop ? "primary" : "outline"}
